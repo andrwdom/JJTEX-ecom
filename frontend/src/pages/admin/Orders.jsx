@@ -1,0 +1,1 @@
+const statusOptions = ['Order Placed', 'Packing', 'Shipped', 'Out for delivery', 'Delivered', 'Cancelled']; 
