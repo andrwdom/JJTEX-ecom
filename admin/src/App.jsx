@@ -5,12 +5,18 @@ import { Routes, Route } from 'react-router-dom'
 import Add from './pages/Add'
 import List from './pages/List'
 import Orders from './pages/Orders'
+import CouponManagement from './pages/CouponManagement'
 import Login from './components/Login'
 import { ToastContainer } from 'react-toastify';
+import { Toaster } from 'react-hot-toast';
 import 'react-toastify/dist/ReactToastify.css';
+import LoadingScreen from './components/LoadingScreen';
+import CarouselManagement from './pages/CarouselManagement';
+import ProtectedRoute from './components/ProtectedRoute';
+import WithClickSpark from './components/WithClickSpark';
 
 export const backendUrl = import.meta.env.VITE_BACKEND_URL
-export const currency = '$'
+export const currency = '₹'
 
 const App = () => {
 
@@ -21,26 +27,60 @@ const App = () => {
   },[token])
 
   return (
-    <div className='bg-gray-50 min-h-screen'>
-      <ToastContainer />
-      {token === ""
-        ? <Login setToken={setToken} />
-        : <>
-          <Navbar setToken={setToken} />
-          <hr />
-          <div className='flex w-full'>
-            <Sidebar />
-            <div className='w-[70%] mx-auto ml-[max(5vw,25px)] my-8 text-gray-600 text-base'>
-              <Routes>
-                <Route path='/add' element={<Add token={token} />} />
-                <Route path='/list' element={<List token={token} />} />
-                <Route path='/orders' element={<Orders token={token} />} />
-              </Routes>
+    <WithClickSpark
+      sparkColor="#FF69B4"
+      sparkSize={12}
+      sparkRadius={20}
+      sparkCount={10}
+      duration={500}
+      easing="ease-out"
+      extraScale={1.2}
+    >
+      <div className='bg-gray-50 min-h-screen'>
+        <ToastContainer />
+        <Toaster position="top-right" />
+        <LoadingScreen />
+        {token === ""
+          ? <Login setToken={setToken} />
+          : <>
+            <Navbar setToken={setToken} />
+            <hr />
+            <div className='flex w-full'>
+              <Sidebar />
+              <div className='w-[70%] mx-auto ml-[max(5vw,25px)] my-8 text-gray-600 text-base'>
+                <Routes>
+                  <Route path='/add' element={
+                    <ProtectedRoute>
+                      <Add token={token} />
+                    </ProtectedRoute>
+                  } />
+                  <Route path='/list' element={
+                    <ProtectedRoute>
+                      <List token={token} />
+                    </ProtectedRoute>
+                  } />
+                  <Route path='/orders' element={
+                    <ProtectedRoute>
+                      <Orders token={token} setToken={setToken} />
+                    </ProtectedRoute>
+                  } />
+                  <Route path='/coupons' element={
+                    <ProtectedRoute>
+                      <CouponManagement token={token} />
+                    </ProtectedRoute>
+                  } />
+                  <Route path="/carousel" element={
+                    <ProtectedRoute>
+                      <CarouselManagement token={token} />
+                    </ProtectedRoute>
+                  } />
+                </Routes>
+              </div>
             </div>
-          </div>
-        </>
-      }
-    </div>
+          </>
+        }
+      </div>
+    </WithClickSpark>
   )
 }
 

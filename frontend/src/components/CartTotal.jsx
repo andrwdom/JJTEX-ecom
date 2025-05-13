@@ -2,26 +2,35 @@ import React, { useContext, useState } from 'react'
 import { ShopContext } from '../context/ShopContext'
 import Title from './Title';
 import { toast } from 'react-toastify';
+import axios from 'axios';
 
 const CartTotal = ({ children }) => {
-    const {currency, delivery_fee, getCartAmount} = useContext(ShopContext);
+    const {currency, delivery_fee, getCartAmount, backendUrl} = useContext(ShopContext);
     const [couponCode, setCouponCode] = useState('');
     const [discount, setDiscount] = useState(0);
+    const [isValidating, setIsValidating] = useState(false);
 
-    // Simple coupon validation - in real app, this would validate against backend
-    const applyCoupon = () => {
-        const coupons = {
-            'WELCOME10': 10,
-            'SAVE20': 20,
-            'SPECIAL30': 30
-        };
+    const applyCoupon = async () => {
+        if (!couponCode.trim()) {
+            toast.error('Please enter a coupon code');
+            return;
+        }
 
-        if (coupons[couponCode]) {
-            setDiscount(coupons[couponCode]);
-            toast.success(`Coupon applied! ${coupons[couponCode]}% off`);
-        } else {
+        setIsValidating(true);
+        try {
+            const response = await axios.post(backendUrl + '/api/coupons/validate', { code: couponCode });
+            if (response.data.valid) {
+                setDiscount(response.data.discountPercentage);
+                toast.success(`Coupon applied! ${response.data.discountPercentage}% off`);
+            } else {
+                setDiscount(0);
+                toast.error('Invalid coupon code');
+            }
+        } catch (error) {
             setDiscount(0);
-            toast.error('Invalid coupon code');
+            toast.error(error.response?.data?.message || 'Failed to validate coupon');
+        } finally {
+            setIsValidating(false);
         }
     };
 
@@ -36,7 +45,7 @@ const CartTotal = ({ children }) => {
             </div>
 
             <div className='flex flex-col gap-4'>
-                <div className='flex justify-between'>
+                <div className='flex justify-between text-gray-900 font-medium'>
                     <p>Subtotal</p>
                     <p>{currency} {subtotal}.00</p>
                 </div>
@@ -49,13 +58,15 @@ const CartTotal = ({ children }) => {
                             value={couponCode}
                             onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
                             placeholder="Enter coupon code"
-                            className='flex-1 border rounded px-3 py-2 text-sm'
+                            className='flex-1 bg-white text-gray-900 placeholder-gray-500 border border-gray-300 rounded px-3 py-2 text-sm focus:border-pink-500 focus:ring-pink-500'
+                            disabled={isValidating}
                         />
                         <button
                             onClick={applyCoupon}
-                            className='bg-black text-white px-4 py-2 text-sm rounded hover:bg-gray-800 transition-colors'
+                            disabled={isValidating}
+                            className='bg-black text-white px-4 py-2 text-sm rounded hover:bg-gray-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed'
                         >
-                            Apply
+                            {isValidating ? 'Validating...' : 'Apply'}
                         </button>
                     </div>
                     {discount > 0 && (
@@ -66,20 +77,19 @@ const CartTotal = ({ children }) => {
                     )}
                 </div>
                 <hr />
-                <div className='flex justify-between'>
+                <div className='flex justify-between text-gray-900 font-medium'>
                     <p>Shipping Fee</p>
                     <p>{currency} {subtotal === 0 ? '0.00' : `${delivery_fee}.00`}</p>
                 </div>
                 <hr />
-                <div className='flex justify-between text-lg font-semibold'>
+                <div className='flex justify-between text-gray-900 font-bold'>
                     <p>Total</p>
                     <p>{currency} {total.toFixed(2)}</p>
                 </div>
-
                 {children}
             </div>
         </div>
-    )
-}
+    );
+};
 
-export default CartTotal
+export default CartTotal;

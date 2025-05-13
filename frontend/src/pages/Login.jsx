@@ -59,23 +59,44 @@ const Login = () => {
         </div>
         {currentState === 'Login' ? '' : (
           <>
-            <input onChange={(e)=>setName(e.target.value)} value={name} type="text" className='w-full px-3 py-2 border border-gray-800' placeholder='Name' required/>
+            <input 
+              onChange={(e)=>setName(e.target.value)} 
+              value={name} 
+              type="text" 
+              className='w-full px-3 py-2 border border-gray-300 bg-white rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent' 
+              placeholder='Name' 
+              required
+            />
             <p className="text-sm text-gray-600 text-center mt-2 px-4">
               The password reset feature is currently under development. Please make sure to enter a password that you can remember.
             </p>
           </>
         )}
-        <input onChange={(e)=>setEmail(e.target.value)} value={email} type="email" className='w-full px-3 py-2 border border-gray-800' placeholder='Email' required/>
-        <input onChange={(e)=>setPasword(e.target.value)} value={password} type="password" className='w-full px-3 py-2 border border-gray-800' placeholder='Password' required/>
+        <input 
+          onChange={(e)=>setEmail(e.target.value)} 
+          value={email} 
+          type="email" 
+          className='w-full px-3 py-2 border border-gray-300 bg-white rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent' 
+          placeholder='Email' 
+          required
+        />
+        <input 
+          onChange={(e)=>setPasword(e.target.value)} 
+          value={password} 
+          type="password" 
+          className='w-full px-3 py-2 border border-gray-300 bg-white rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent' 
+          placeholder='Password' 
+          required
+        />
         <div className='w-full flex justify-between text-sm mt-[-8px]'>
             <Link to="/forgot-password" className='text-blue-600 hover:text-blue-800 cursor-pointer'>Forgot your password?</Link>
             {
               currentState === 'Login' 
-              ? <p onClick={()=>setCurrentState('Sign Up')} className=' cursor-pointer'>Create account</p>
-              : <p onClick={()=>setCurrentState('Login')} className=' cursor-pointer'>Login Here</p>
+              ? <p onClick={()=>setCurrentState('Sign Up')} className='cursor-pointer'>Create account</p>
+              : <p onClick={()=>setCurrentState('Login')} className='cursor-pointer'>Login Here</p>
             }
         </div>
-        <button className='bg-black text-white font-light px-8 py-2 mt-4'>{currentState === 'Login' ? 'Sign In' : 'Sign Up'}</button>
+        <button className='bg-black text-white font-light px-8 py-2 mt-4 rounded-md hover:bg-gray-800 transition-colors'>{currentState === 'Login' ? 'Sign In' : 'Sign Up'}</button>
     </form>
   )
 }

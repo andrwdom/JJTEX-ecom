@@ -1,7 +1,7 @@
 import express from 'express'
 import {placeOrder, placeOrderStripe, placeOrderRazorpay, allOrders, userOrders, updateStatus, verifyStripe, verifyRazorpay, processCardPayment, cancelOrder} from '../controllers/orderController.js'
 import adminAuth  from '../middleware/adminAuth.js'
-import authUser from '../middleware/auth.js'
+import { verifyToken } from '../middleware/auth.js'
 
 const orderRouter = express.Router()
 
@@ -9,18 +9,14 @@ const orderRouter = express.Router()
 orderRouter.post('/list',adminAuth,allOrders)
 orderRouter.post('/status',adminAuth,updateStatus)
 
-// Payment Features
-orderRouter.post('/place',authUser,placeOrder)
-orderRouter.post('/stripe',authUser,placeOrderStripe)
-orderRouter.post('/razorpay',authUser,placeOrderRazorpay)
-orderRouter.post('/card-payment', authUser, processCardPayment)
-
-// User Feature 
-orderRouter.post('/userorders',authUser,userOrders)
-orderRouter.post('/cancel',authUser,cancelOrder)
-
-// verify payment
-orderRouter.post('/verifyStripe',authUser, verifyStripe)
-orderRouter.post('/verifyRazorpay',authUser, verifyRazorpay)
+// User Features
+orderRouter.post('/userorders',verifyToken,userOrders)
+orderRouter.post('/place',verifyToken,placeOrder)
+orderRouter.post('/place-stripe',verifyToken,placeOrderStripe)
+orderRouter.post('/place-razorpay',verifyToken,placeOrderRazorpay)
+orderRouter.post('/verify-stripe',verifyToken,verifyStripe)
+orderRouter.post('/verify-razorpay',verifyToken,verifyRazorpay)
+orderRouter.post('/process-card',verifyToken,processCardPayment)
+orderRouter.post('/cancel',verifyToken,cancelOrder)
 
 export default orderRouter

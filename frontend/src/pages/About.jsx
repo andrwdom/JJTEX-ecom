@@ -28,15 +28,15 @@ const About = () => {
       <div className='flex flex-col md:flex-row text-sm mb-20'>
           <div className='border px-10 md:px-16 py-8 sm:py-20 flex flex-col gap-5'>
             <b>Quality You Can Trust:</b>
-            <p className=' text-gray-600'>Every piece at JJ TEX is handpicked to make sure it not only looks good but lasts long. We don't settle for average — and neither should you.</p>
+            <p className='text-gray-800'>Every piece at JJ TEX is handpicked to make sure it not only looks good but lasts long. We don't settle for average — and neither should you.</p>
           </div>
           <div className='border px-10 md:px-16 py-8 sm:py-20 flex flex-col gap-5'>
             <b>Effortless Shopping:</b>
-            <p className=' text-gray-600'>From scrolling to checkout, our website is built to make your experience smooth and stress-free. Fast, simple, and always user-friendly.</p>
+            <p className='text-gray-800'>From scrolling to checkout, our website is built to make your experience smooth and stress-free. Fast, simple, and always user-friendly.</p>
           </div>
           <div className='border px-10 md:px-16 py-8 sm:py-20 flex flex-col gap-5'>
             <b>We've Got Your Back: </b>
-            <p className=' text-gray-600'>From scrolling to checkout, our website is built to make your experience smooth and stress-free. Fast, simple, and always user-friendly.</p>
+            <p className='text-gray-800'>From scrolling to checkout, our website is built to make your experience smooth and stress-free. Fast, simple, and always user-friendly.</p>
           </div>
       </div>
 

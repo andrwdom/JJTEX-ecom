@@ -1,25 +1,154 @@
-import React, { useContext, useEffect, useState } from 'react'
-import { useParams } from 'react-router-dom'
+import React, { useContext, useEffect, useState, useRef } from 'react'
+import { useParams, useNavigate } from 'react-router-dom'
 import { ShopContext } from '../context/ShopContext';
 import { assets } from '../assets/assets';
 import RelatedProducts from '../components/RelatedProducts';
 import axios from 'axios';
 import { toast } from 'react-toastify';
+import { motion, AnimatePresence } from 'framer-motion';
+
+// Share options component
+const ShareOptions = ({ product, onClose }) => {
+  const shareUrl = window.location.href;
+  const shareText = `Check out ${product.name} on JJTEX!`;
+
+  const shareLinks = [
+    {
+      name: 'WhatsApp',
+      icon: (
+        <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
+        </svg>
+      ),
+      url: `https://web.whatsapp.com/send?text=${encodeURIComponent(`${shareText} ${shareUrl}`)}`,
+      mobileUrl: `whatsapp://send?text=${encodeURIComponent(`${shareText} ${shareUrl}`)}`
+    },
+    {
+      name: 'Facebook',
+      icon: (
+        <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
+        </svg>
+      ),
+      url: `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shareUrl)}`
+    },
+    {
+      name: 'Twitter',
+      icon: (
+        <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
+        </svg>
+      ),
+      url: `https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}&url=${encodeURIComponent(shareUrl)}`
+    },
+    {
+      name: 'Copy Link',
+      icon: (
+        <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+        </svg>
+      ),
+      url: '#'
+    }
+  ];
+
+  const handleShare = async () => {
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: product.name,
+          text: shareText,
+          url: shareUrl,
+        });
+      } catch (error) {
+        if (error.name !== 'AbortError') {
+          console.error('Error sharing:', error);
+        }
+      }
+    } else {
+      // Fallback to opening share links
+      window.open(shareLinks[0].url, '_blank');
+    }
+    onClose();
+  };
+
+  const handleShareClick = (link, index) => {
+    if (link.name === 'Copy Link') {
+      navigator.clipboard.writeText(shareUrl).then(() => {
+        toast.success('Link copied to clipboard!');
+        onClose();
+      }).catch(() => {
+        toast.error('Failed to copy link');
+      });
+    } else if (link.name === 'WhatsApp') {
+      // Check if mobile or desktop
+      const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+      window.open(isMobile ? link.mobileUrl : link.url, '_blank');
+      onClose();
+    } else {
+      window.open(link.url, '_blank');
+      onClose();
+    }
+  };
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: 20 }}
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50"
+      onClick={onClose}
+    >
+      <div className="bg-white rounded-2xl p-6 w-[90%] max-w-sm" onClick={e => e.stopPropagation()}>
+        <h3 className="text-lg font-semibold mb-4">Share this product</h3>
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+          {shareLinks.map((link, index) => (
+            <button
+              key={index}
+              className="flex flex-col items-center gap-2 p-3 rounded-xl hover:bg-gray-100 transition-colors"
+              onClick={() => handleShareClick(link, index)}
+            >
+              <div className="text-gray-700">{link.icon}</div>
+              <span className="text-sm text-gray-600">{link.name}</span>
+            </button>
+          ))}
+        </div>
+        {navigator.share && (
+          <button
+            onClick={handleShare}
+            className="w-full mt-4 bg-pink-500 text-white rounded-full py-2 font-medium hover:bg-pink-600 transition-colors"
+          >
+            Share via...
+          </button>
+        )}
+        <button
+          onClick={onClose}
+          className="w-full mt-2 border border-gray-200 rounded-full py-2 font-medium text-gray-600 hover:bg-gray-50 transition-colors"
+        >
+          Cancel
+        </button>
+      </div>
+    </motion.div>
+  );
+};
 
 const Product = () => {
-
   const { productId } = useParams();
   const { currency, addToCart, backendUrl } = useContext(ShopContext);
+  const navigate = useNavigate();
   const [productData, setProductData] = useState(null);
   const [image, setImage] = useState('');
   const [size, setSize] = useState('');
+  const [selectedStock, setSelectedStock] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [showStickyBar, setShowStickyBar] = useState(false);
+  const galleryRef = useRef(null);
+  const [showShareOptions, setShowShareOptions] = useState(false);
 
   const fetchProductData = async () => {
     try {
       setLoading(true);
       const response = await axios.post(backendUrl + '/api/product/single', { productId });
-      
       if (response.data.success) {
         setProductData(response.data.product);
         setImage(response.data.product.image[0]);
@@ -38,6 +167,23 @@ const Product = () => {
     fetchProductData();
   }, [productId]);
 
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, []);
+
+  // Show sticky bar on scroll (mobile only)
+  useEffect(() => {
+    const handleScroll = () => {
+      if (window.innerWidth < 640) {
+        setShowStickyBar(window.scrollY > 200);
+      } else {
+        setShowStickyBar(false);
+      }
+    };
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -55,62 +201,193 @@ const Product = () => {
   }
 
   return productData ? (
-    <div className='border-t-2 pt-10 transition-opacity ease-in duration-500 opacity-100'>
-      {/*----------- Product Data-------------- */}
-      <div className='flex gap-12 sm:gap-12 flex-col sm:flex-row'>
-
-        {/*---------- Product Images------------- */}
-        <div className='flex-1 flex flex-col-reverse gap-3 sm:flex-row'>
-          <div className='flex sm:flex-col overflow-x-auto sm:overflow-y-scroll justify-between sm:justify-normal sm:w-[18.7%] w-full'>
-              {
-                productData.image.map((item,index)=>(
-                  <img onClick={()=>setImage(item)} src={item} key={index} className='w-[24%] sm:w-full sm:mb-3 flex-shrink-0 cursor-pointer' alt="" />
-                ))
-              }
-          </div>
-          <div className='w-full sm:w-[80%]'>
-              <img className='w-full h-auto' src={image} alt="" />
+    <div className="border-t-2 pt-4 sm:pt-10 transition-opacity ease-in duration-500 opacity-100 bg-white min-h-screen">
+      {/* Back button for mobile */}
+      <div className="sm:hidden px-4 mb-2">
+        <button onClick={() => navigate(-1)} className="flex items-center gap-2 text-gray-500 hover:text-black py-2">
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+          </svg>
+          Back
+        </button>
+      </div>
+      <div className="flex flex-col md:flex-row gap-8 md:gap-10 px-2 sm:px-8 max-w-6xl mx-auto">
+        {/* Image Gallery */}
+        <div className="flex-1 flex flex-col items-center w-full">
+          <div className="w-full max-w-md relative">
+            {/* Share button */}
+            <button
+              onClick={() => setShowShareOptions(true)}
+              className="absolute top-4 right-4 z-10 bg-white/80 backdrop-blur-sm p-2 rounded-full shadow-lg hover:bg-white transition-colors"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6 text-gray-700" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
+              </svg>
+            </button>
+            <motion.img
+              key={image}
+              src={image}
+              alt={productData.name}
+              className="w-full aspect-[4/5] object-cover rounded-2xl shadow-md mb-2"
+              initial={{ opacity: 0, scale: 0.98 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 0.4 }}
+            />
+            {/* Thumbnails - horizontal scroll on mobile */}
+            <div
+              ref={galleryRef}
+              className="flex gap-2 mt-2 overflow-x-auto scrollbar-hide px-1"
+            >
+              {productData.image.map((img, idx) => (
+                <img
+                  key={idx}
+                  src={img}
+                  alt={productData.name}
+                  className={`w-16 h-16 object-cover rounded-lg cursor-pointer border-2 transition-all duration-200 ${img === image ? 'border-pink-500 scale-105' : 'border-gray-200'}`}
+                  onClick={() => setImage(img)}
+                />
+              ))}
+            </div>
           </div>
         </div>
-
-        {/* -------- Product Info ---------- */}
-        <div className='flex-1'>
-          <h1 className='font-medium text-2xl mt-2'>{productData.name}</h1>
-          <p className='mt-5 text-3xl font-medium'>{currency}{productData.price}</p>
-          <p className='mt-5 text-gray-500 md:w-4/5'>{productData.description}</p>
-          <div className='flex flex-col gap-4 my-8'>
-              <p>Select Size</p>
-              <div className='flex gap-2'>
-                {productData.sizes.map((item,index)=>(
-                  <button onClick={()=>setSize(item)} className={`border py-2 px-4 bg-gray-100 ${item === size ? 'border-orange-500' : ''}`} key={index}>{item}</button>
-                ))}
+        {/* Product Info */}
+        <motion.div 
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4 }}
+          className="flex-1 flex flex-col gap-4 sm:gap-6 mt-4 sm:mt-0"
+        >
+          <h1 className="text-2xl sm:text-3xl font-bold leading-tight mb-1">{productData.name}</h1>
+          <p className="text-gray-600 text-base sm:text-lg mb-2">{productData.description}</p>
+          <div className="text-3xl font-semibold text-pink-500 mb-2">{currency}{productData.price}</div>
+          {/* Size Selector */}
+          <div className="flex flex-col gap-2 my-2">
+            <p className="text-sm font-medium text-gray-700 mb-1">Select Size</p>
+            <div className="flex gap-2 flex-wrap">
+              {productData.sizes.map((item, index) => (
+                <button
+                  onClick={() => {
+                    setSize(item.size);
+                    setSelectedStock(item.stock);
+                  }}
+                  className={`rounded-full border py-2 px-5 text-sm font-semibold transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-pink-400 ${item.size === size ? 'bg-pink-100 border-pink-500 text-pink-600 shadow' : 'bg-gray-100 border-gray-200 text-gray-700'}`}
+                  key={index}
+                >
+                  {item.size}
+                </button>
+              ))}
+            </div>
+            {size && (
+              <div className="mt-2 w-full max-w-xs flex flex-col gap-2 mb-6">
+                <div className="flex items-center justify-between mb-1">
+                  <span className="text-xs text-gray-500 font-medium">Stock left: <span className="font-semibold text-gray-700">{selectedStock}</span></span>
+                  {selectedStock <= 5 && (
+                    <motion.span
+                      initial={{ scale: 0.9, opacity: 0.7 }}
+                      animate={{ scale: [0.9, 1.1, 0.9], opacity: [0.7, 1, 0.7] }}
+                      transition={{ repeat: Infinity, duration: 1.2 }}
+                      className="ml-2 px-2 py-0.5 rounded-full bg-pink-100 text-pink-600 text-xs font-semibold shadow-sm"
+                    >
+                      Only a few left! Don't miss it
+                    </motion.span>
+                  )}
+                </div>
+                <div className="w-full bg-gray-100 rounded-full h-2.5 shadow-inner overflow-hidden">
+                  <motion.div
+                    className={`h-full rounded-full ${
+                      selectedStock <= 5 
+                        ? 'bg-red-500' 
+                        : selectedStock <= 10 
+                        ? 'bg-yellow-500' 
+                        : 'bg-green-500'
+                    }`}
+                    initial={{ width: 0 }}
+                    animate={{ 
+                      width: `${Math.min((selectedStock / 20) * 100, 100)}%`,
+                      transition: { duration: 0.8, ease: "easeOut" }
+                    }}
+                  >
+                    <motion.div
+                      className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent"
+                      initial={{ x: "-100%" }}
+                      animate={{ x: "100%" }}
+                      transition={{ 
+                        repeat: Infinity,
+                        duration: 1.5,
+                        ease: "linear"
+                      }}
+                    />
+                  </motion.div>
+                </div>
+                <div className="flex justify-between text-xs text-gray-500">
+                  <span>0</span>
+                  <span>20+</span>
+                </div>
+                {selectedStock === 0 && (
+                  <motion.p
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="text-red-600 text-sm font-medium mt-1"
+                  >
+                    Out of stock
+                  </motion.p>
+                )}
               </div>
+            )}
           </div>
-          <button onClick={()=>addToCart(productData._id,size)} className='bg-pink-400 rounded-full text-white px-8 py-3 text-sm hover:bg-pink-600'>ADD TO CART</button>
-          <hr className='mt-8 sm:w-4/5' />
-          <div className='text-sm text-gray-500 mt-5 flex flex-col gap-1'>
-              <p>100% Original product.</p>
-              <p>Cash on delivery is available on this product.</p>
-              <p>Easy return and exchange policy within 7 days.</p>
+          {/* Action Buttons (desktop) */}
+          <div className="hidden sm:flex gap-4 mt-2">
+            <button onClick={() => addToCart(productData._id, size)} className="bg-pink-400 rounded-full text-white px-8 py-3 text-sm font-semibold hover:bg-pink-600 transition-colors">ADD TO CART</button>
+            <button
+              onClick={() => {
+                if (!size) {
+                  toast.error('Select Product Size');
+                  return;
+                }
+                addToCart(productData._id, size);
+                setTimeout(() => navigate('/place-order'), 200);
+              }}
+              className="bg-black rounded-full text-white px-8 py-3 text-sm font-semibold hover:bg-gray-800 transition-colors"
+            >
+              BUY NOW
+            </button>
           </div>
-        </div>
+        </motion.div>
       </div>
-
-      {/* ---------- Description Section ------------- */}
-      <div className='mt-20'>
-        <div className='flex'>
-          <b className='border px-5 py-3 text-sm'>Description</b>
-        </div>
-        <div className='flex flex-col gap-4 border px-6 py-6 text-sm text-gray-500'>
-          <p>{productData.description}</p>
-          <p>E-commerce websites typically display products or services along with detailed descriptions, images, prices, and any available variations (e.g., sizes, colors). Each product usually has its own dedicated page with relevant information.</p>
-        </div>
-      </div>
-
-      {/* --------- display related products ---------- */}
-
+      {/* Sticky Action Bar (mobile) */}
+      <AnimatePresence>
+        {showStickyBar && (
+          <motion.div
+            initial={{ y: 80, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            exit={{ y: 80, opacity: 0 }}
+            transition={{ duration: 0.3 }}
+            className="fixed bottom-0 left-0 right-0 z-30 bg-white border-t shadow-lg flex sm:hidden gap-2 px-4 py-3"
+          >
+            <button onClick={() => addToCart(productData._id, size)} className="flex-1 bg-pink-400 rounded-full text-white py-3 text-base font-semibold hover:bg-pink-600 transition-colors">Add to Cart</button>
+            <button
+              onClick={() => {
+                if (!size) {
+                  toast.error('Select Product Size');
+                  return;
+                }
+                addToCart(productData._id, size);
+                setTimeout(() => navigate('/place-order'), 200);
+              }}
+              className="flex-1 bg-black rounded-full text-white py-3 text-base font-semibold hover:bg-gray-800 transition-colors"
+            >
+              Buy Now
+            </button>
+          </motion.div>
+        )}
+      </AnimatePresence>
+      {/* Share Options Modal */}
+      <AnimatePresence>
+        {showShareOptions && (
+          <ShareOptions product={productData} onClose={() => setShowShareOptions(false)} />
+        )}
+      </AnimatePresence>
       <RelatedProducts category={productData.category} subCategory={productData.subCategory} />
-
     </div>
   ) : <div className=' opacity-0'></div>
 }

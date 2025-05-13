@@ -7,6 +7,8 @@ import userRouter from './routes/userRoute.js'
 import productRouter from './routes/productRoute.js'
 import cartRouter from './routes/cartRoute.js'
 import orderRouter from './routes/orderRoute.js'
+import couponRouter from './routes/couponRoutes.js'
+import carouselRouter from './routes/carouselRoutes.js'
 
 // App Config
 const app = express()
@@ -17,12 +19,15 @@ connectCloudinary()
 // middlewares
 app.use(express.json())
 app.use(cors())
+app.use('/uploads', express.static('uploads'))
 
 // api endpoints
 app.use('/api/user',userRouter)
 app.use('/api/product',productRouter)
 app.use('/api/cart',cartRouter)
 app.use('/api/order',orderRouter)
+app.use('/api/coupons', couponRouter)
+app.use('/api/carousel', carouselRouter)
 
 app.get('/',(req,res)=>{
     res.send("API Working")

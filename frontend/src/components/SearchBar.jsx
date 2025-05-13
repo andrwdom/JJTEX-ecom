@@ -15,7 +15,7 @@ const SearchBar = () => {
     if (localSearch.trim()) {
       setSearch(localSearch)
       setShowSearch(true)
-      navigate('/collection')
+      navigate('/collection', { state: { fromSearch: true } })
     }
   }
 
@@ -26,7 +26,7 @@ const SearchBar = () => {
     setShowSearch(value.trim() !== '')
     
     if (value.trim() && location.pathname !== '/collection') {
-      navigate('/collection')
+      navigate('/collection', { state: { fromSearch: true } })
     }
   }
 
@@ -38,11 +38,11 @@ const SearchBar = () => {
 
   return (
     <form onSubmit={handleSubmit} className="relative w-full">
-      <div className={`flex items-center bg-white rounded-full border shadow-sm transition-all duration-300 ${
-        isFocused ? 'ring-1 ring-[#FF6EBB] border-[#FF6EBB]' : 'border-gray-300'
+      <div className={`flex items-center bg-white rounded-full border transition-all duration-300 ${
+        isFocused ? 'ring-2 ring-[#FF6EBB] border-[#FF6EBB]' : 'border-gray-300'
       }`}>
-        <button type="submit" className="pl-4">
-          <img src={assets.search_icon} className="w-4 h-4 opacity-50" alt="Search" />
+        <button type="submit" className="pl-4 text-gray-700 hover:text-[#FF6EBB] transition-colors">
+          <img src={assets.search_icon} className="w-4 h-4" alt="Search" />
         </button>
         <input
           type="text"
@@ -51,13 +51,13 @@ const SearchBar = () => {
           onFocus={() => setIsFocused(true)}
           onBlur={() => setIsFocused(false)}
           placeholder="Search for Products..."
-          className="w-full px-3 py-2 rounded-full outline-none text-sm placeholder-gray-400"
+          className="w-full px-3 py-2 bg-white rounded-full outline-none text-sm placeholder-gray-500 text-gray-900"
         />
         {localSearch && (
           <button 
             type="button"
             onClick={handleClear}
-            className="p-2 text-gray-400 hover:text-gray-600 transition-colors"
+            className="p-2 text-gray-700 hover:text-[#FF6EBB] transition-colors"
           >
             <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
