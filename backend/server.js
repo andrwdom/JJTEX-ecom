@@ -1,6 +1,7 @@
 import express from 'express'
 import cors from 'cors'
 import 'dotenv/config'
+import rateLimit from 'express-rate-limit'
 import connectDB from './config/mongodb.js'
 import connectCloudinary from './config/cloudinary.js'
 import userRouter from './routes/userRoute.js'
@@ -16,21 +17,78 @@ const port = process.env.PORT || 4000
 connectDB()
 connectCloudinary()
 
+// Rate limiting
+const limiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    max: 100, // Limit each IP to 100 requests per windowMs
+    message: 'Too many requests from this IP, please try again later.',
+    standardHeaders: true,
+    legacyHeaders: false
+});
+
+// Apply rate limiting to all routes
+app.use(limiter);
+
+// Apply stricter rate limiting to auth routes
+const authLimiter = rateLimit({
+    windowMs: 60 * 60 * 1000, // 1 hour
+    max: 5, // 5 attempts per hour
+    message: 'Too many login attempts, please try again later'
+});
+
+app.use('/api/user/login', authLimiter);
+app.use('/api/user/admin', authLimiter);
+
+// Security headers
+app.use((req, res, next) => {
+    res.setHeader('X-Content-Type-Options', 'nosniff');
+    res.setHeader('X-Frame-Options', 'DENY');
+    res.setHeader('X-XSS-Protection', '1; mode=block');
+    res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
+    res.setHeader('Content-Security-Policy', "default-src 'self'; img-src 'self' data: https: http:; script-src 'self' 'unsafe-inline' 'unsafe-eval' https:; style-src 'self' 'unsafe-inline' https:; connect-src 'self' https: http:;");
+    next();
+});
+
+// CORS configuration
+const corsOptions = {
+  origin: [
+    process.env.FRONTEND_URL,
+    process.env.ADMIN_URL,
+    // Add local development URLs if needed
+    'http://localhost:5173',  // Frontend local
+    'http://localhost:5174'   // Admin local
+  ],
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'token'],
+  credentials: true,
+  maxAge: 86400 // 24 hours
+}
+
 // middlewares
 app.use(express.json())
-app.use(cors())
+app.use(cors(corsOptions))
 app.use('/uploads', express.static('uploads'))
 
 // api endpoints
-app.use('/api/user',userRouter)
-app.use('/api/product',productRouter)
-app.use('/api/cart',cartRouter)
-app.use('/api/order',orderRouter)
+app.use('/api/user', userRouter)
+app.use('/api/product', productRouter)
+app.use('/api/cart', cartRouter)
+app.use('/api/order', orderRouter)
 app.use('/api/coupons', couponRouter)
 app.use('/api/carousel', carouselRouter)
 
-app.get('/',(req,res)=>{
+app.get('/', (req, res) => {
     res.send("API Working")
 })
 
-app.listen(port, ()=> console.log('Server started on PORT : '+ port))
+// Error handling middleware
+app.use((err, req, res, next) => {
+    console.error(err.stack)
+    res.status(500).json({
+        success: false,
+        message: 'Internal Server Error',
+        error: process.env.NODE_ENV === 'development' ? err.message : undefined
+    })
+})
+
+app.listen(port, () => console.log(`Server running on port ${port}`))
