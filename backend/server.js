@@ -3,7 +3,7 @@ import cors from 'cors'
 import 'dotenv/config'
 import rateLimit from 'express-rate-limit'
 import connectDB from './config/mongodb.js'
-import connectCloudinary from './config/cloudinary.js'
+import { cloudinary } from './config/cloudinary.js'
 import userRouter from './routes/userRoute.js'
 import productRouter from './routes/productRoute.js'
 import cartRouter from './routes/cartRoute.js'
@@ -15,7 +15,6 @@ import carouselRouter from './routes/carouselRoutes.js'
 const app = express()
 const port = process.env.PORT || 4000
 connectDB()
-connectCloudinary()
 
 // Debug logging middleware
 app.use((req, res, next) => {
