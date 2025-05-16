@@ -36,21 +36,30 @@ const isAdmin = async (req, res, next) => {
     const { token } = req.headers;
 
     if (!token) {
-        return res.json({ success: false, message: 'Not Authorized - No token provided' })
+        return res.status(401).json({ 
+            success: false, 
+            message: 'Not Authorized - No token provided' 
+        });
     }
 
     try {
         const decoded = jwt.verify(token, process.env.JWT_SECRET);
         
         if (decoded.role !== 'admin') {
-            return res.json({ success: false, message: 'Not Authorized - Admin access required' });
+            return res.status(403).json({ 
+                success: false, 
+                message: 'Not Authorized - Admin access required' 
+            });
         }
 
         req.user = decoded;
         next();
     } catch (error) {
         console.log('Admin Auth Error:', error);
-        res.json({ success: false, message: 'Not Authorized - Invalid token' })
+        return res.status(401).json({ 
+            success: false, 
+            message: 'Not Authorized - Invalid token' 
+        });
     }
 }
 
