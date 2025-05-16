@@ -27,42 +27,42 @@ export const backendUrl = import.meta.env.VITE_BACKEND_URL;
 const App = () => {
   return (
     <AuthProvider>
-      <LoadingProvider>
-        <WithClickSpark
-          sparkColor="#FF69B4"
-          sparkSize={12}
-          sparkRadius={20}
-          sparkCount={10}
-          duration={500}
-          easing="ease-out"
-          extraScale={1.2}
-        >
-          <div className='min-h-screen bg-white'>
-            <LoadingScreen />
-            <div className='px-4 sm:px-[5vw] md:px-[7vw] lg:px-[9vw] pt-[160px] sm:pt-[180px]'>
-              <ToastContainer />
-              <Navbar />
+    <LoadingProvider>
+      <WithClickSpark
+        sparkColor="#FF69B4"
+        sparkSize={12}
+        sparkRadius={20}
+        sparkCount={10}
+        duration={500}
+        easing="ease-out"
+        extraScale={1.2}
+      >
+        <div className='min-h-screen bg-white'>
+          <LoadingScreen />
+          <div className='px-4 sm:px-[5vw] md:px-[7vw] lg:px-[9vw] pt-[160px] sm:pt-[180px]'>
+            <ToastContainer />
+            <Navbar />
               <AuthCheck />
-              <PageTransition>
-                <Routes>
-                  <Route path='/' element={<Home />} />
-                  <Route path='/collection' element={<Collection />} />
-                  <Route path='/about' element={<About />} />
-                  <Route path='/contact' element={<Contact />} />
-                  <Route path='/product/:productId' element={<Product />} />
-                  <Route path='/cart' element={<Cart />} />
-                  <Route path='/login' element={<Login />} />
-                  <Route path='/forgot-password' element={<ForgotPassword />} />
-                  <Route path='/place-order' element={<PlaceOrder />} />
-                  <Route path='/orders' element={<Orders />} />
-                  <Route path='/verify' element={<Verify />} />
-                </Routes>
-              </PageTransition>
-              <Footer />
-            </div>
+            <PageTransition>
+              <Routes>
+                <Route path='/' element={<Home />} />
+                <Route path='/collection' element={<Collection />} />
+                <Route path='/about' element={<About />} />
+                <Route path='/contact' element={<Contact />} />
+                <Route path='/product/:productId' element={<Product />} />
+                <Route path='/cart' element={<Cart />} />
+                <Route path='/login' element={<Login />} />
+                <Route path='/forgot-password' element={<ForgotPassword />} />
+                <Route path='/place-order' element={<PlaceOrder />} />
+                <Route path='/orders' element={<Orders />} />
+                <Route path='/verify' element={<Verify />} />
+              </Routes>
+            </PageTransition>
+            <Footer />
           </div>
-        </WithClickSpark>
-      </LoadingProvider>
+        </div>
+      </WithClickSpark>
+    </LoadingProvider>
     </AuthProvider>
   )
 }

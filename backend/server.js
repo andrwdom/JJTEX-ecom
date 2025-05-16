@@ -17,6 +17,12 @@ const port = process.env.PORT || 4000
 connectDB()
 connectCloudinary()
 
+// Debug logging middleware
+app.use((req, res, next) => {
+    console.log(`${new Date().toISOString()} - ${req.method} ${req.url}`);
+    next();
+});
+
 // Rate limiting
 const limiter = rateLimit({
     windowMs: 15 * 60 * 1000, // 15 minutes
@@ -51,22 +57,20 @@ app.use((req, res, next) => {
 
 // CORS configuration
 const corsOptions = {
-  origin: [
-    process.env.FRONTEND_URL,
-    process.env.ADMIN_URL,
-    // Add local development URLs if needed
-    'http://localhost:5173',  // Frontend local
-    'http://localhost:5174'   // Admin local
-  ],
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'token'],
-  credentials: true,
-  maxAge: 86400 // 24 hours
+    origin: function (origin, callback) {
+        // Allow all origins during testing
+        callback(null, true);
+    },
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'token', 'x-requested-with'],
+    exposedHeaders: ['Content-Range', 'X-Content-Range']
 }
 
 // middlewares
-app.use(express.json())
 app.use(cors(corsOptions))
+app.use(express.json())
+app.use(express.urlencoded({ extended: true }))
 app.use('/uploads', express.static('uploads'))
 
 // api endpoints

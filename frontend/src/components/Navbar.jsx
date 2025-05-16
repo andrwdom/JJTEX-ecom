@@ -222,31 +222,31 @@ const Navbar = () => {
                   className="fixed top-0 left-0 h-[100vh] w-[80%] max-w-sm bg-white z-[102] shadow-xl flex flex-col"
                 >
                   <div className="flex items-center justify-between p-4 border-b bg-[#f3e5f5]">
-                    <img src={assets.logo1} className="w-32" alt="Logo" />
-                    <button 
-                      onClick={() => setIsMenuOpen(false)}
+                      <img src={assets.logo1} className="w-32" alt="Logo" />
+                      <button 
+                        onClick={() => setIsMenuOpen(false)}
                       className="p-2 hover:bg-purple-300/20 rounded-lg text-gray-700"
-                    >
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                      </svg>
-                    </button>
-                  </div>
+                      >
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                      </button>
+                    </div>
                   <div className="flex-1 overflow-y-auto bg-white">
-                    <nav className="p-4">
-                      <ul className="space-y-4">
-                        {['HOME', 'COLLECTION', 'ABOUT', 'CONTACT'].map((item) => (
-                          <li key={item}>
-                            <button
-                              onClick={() => handleNavigation(item === 'HOME' ? '/' : `/${item.toLowerCase()}`)}
+                      <nav className="p-4">
+                        <ul className="space-y-4">
+                          {['HOME', 'COLLECTION', 'ABOUT', 'CONTACT'].map((item) => (
+                            <li key={item}>
+                              <button
+                                onClick={() => handleNavigation(item === 'HOME' ? '/' : `/${item.toLowerCase()}`)}
                               className="w-full text-left py-3 px-4 rounded-lg hover:bg-[#f3e5f5] text-gray-800 font-medium transition-colors hover:text-[#ff69b4] text-base"
-                            >
-                              {item}
-                            </button>
-                          </li>
-                        ))}
-                      </ul>
-                    </nav>
+                              >
+                                {item}
+                              </button>
+                            </li>
+                          ))}
+                        </ul>
+                      </nav>
                   </div>
                 </motion.div>
               </>

@@ -2,26 +2,11 @@ import express from 'express';
 import { getCarouselBanners, createCarouselBanner, updateCarouselBanner, deleteCarouselBanner, updateBannerOrder } from '../controllers/carouselController.js';
 import { isAdmin } from '../middleware/auth.js';
 import multer from 'multer';
-import path from 'path';
-import fs from 'fs';
 
 const router = express.Router();
 
-// Ensure uploads directory exists
-const uploadsDir = 'uploads';
-if (!fs.existsSync(uploadsDir)) {
-  fs.mkdirSync(uploadsDir);
-}
-
-// Configure multer for image upload
-const storage = multer.diskStorage({
-  destination: function (req, file, cb) {
-    cb(null, uploadsDir);
-  },
-  filename: function (req, file, cb) {
-    cb(null, Date.now() + path.extname(file.originalname));
-  }
-});
+// Configure multer to store in memory
+const storage = multer.memoryStorage();
 
 // Add file filter to only allow images
 const fileFilter = (req, file, cb) => {

@@ -1,6 +1,33 @@
 import CarouselBanner from '../models/CarouselBanner.js';
 import { cloudinary } from '../config/cloudinary.js';
-import fs from 'fs';
+import { Readable } from 'stream';
+
+// Helper function to upload buffer to Cloudinary
+const uploadBuffer = (buffer) => {
+  return new Promise((resolve, reject) => {
+    const uploadStream = cloudinary.uploader.upload_stream(
+      {
+        folder: 'carousel_banners',
+        width: 1920,
+        height: 800,
+        crop: 'fill'
+      },
+      (error, result) => {
+        if (error) reject(error);
+        else resolve(result);
+      }
+    );
+
+    const readableStream = new Readable({
+      read() {
+        this.push(buffer);
+        this.push(null);
+      }
+    });
+
+    readableStream.pipe(uploadStream);
+  });
+};
 
 // Get all carousel banners
 export const getCarouselBanners = async (req, res) => {
@@ -18,27 +45,13 @@ export const createCarouselBanner = async (req, res) => {
     const { title, description, sectionId, order } = req.body;
     const imageFile = req.file;
 
-    console.log('Creating banner with:', { title, description, sectionId, order });
-    console.log('Image file:', imageFile ? { 
-      path: imageFile.path,
-      mimetype: imageFile.mimetype,
-      size: imageFile.size 
-    } : 'No image file');
-
     if (!imageFile) {
       return res.status(400).json({ message: 'Image is required' });
     }
 
     try {
-      console.log('Attempting to upload to Cloudinary...');
-      // Upload image to Cloudinary
-      const result = await cloudinary.uploader.upload(imageFile.path, {
-        folder: 'carousel_banners',
-        width: 1920,
-        height: 800,
-        crop: 'fill'
-      });
-      console.log('Cloudinary upload successful:', result.secure_url);
+      // Upload buffer to Cloudinary
+      const result = await uploadBuffer(imageFile.buffer);
 
       const banner = new CarouselBanner({
         image: result.secure_url,
@@ -49,24 +62,9 @@ export const createCarouselBanner = async (req, res) => {
       });
 
       await banner.save();
-      console.log('Banner saved to database:', banner._id);
-      
-      // Delete the local file after successful upload to Cloudinary
-      fs.unlink(imageFile.path, (err) => {
-        if (err) {
-          console.error('Error deleting local file:', err);
-        } else {
-          console.log('Local file deleted successfully');
-        }
-      });
-
       res.status(201).json(banner);
     } catch (cloudinaryError) {
       console.error('Cloudinary upload error:', cloudinaryError);
-      // If Cloudinary upload fails, delete the local file and return error
-      fs.unlink(imageFile.path, (err) => {
-        if (err) console.error('Error deleting local file:', err);
-      });
       throw new Error(`Failed to upload image to Cloudinary: ${cloudinaryError.message}`);
     }
   } catch (error) {
@@ -95,12 +93,7 @@ export const updateCarouselBanner = async (req, res) => {
 
     if (imageFile) {
       // Upload new image to Cloudinary
-      const result = await cloudinary.uploader.upload(imageFile.path, {
-        folder: 'carousel_banners',
-        width: 1920,
-        height: 800,
-        crop: 'fill'
-      });
+      const result = await uploadBuffer(imageFile.buffer);
       updateData.image = result.secure_url;
     }
 
@@ -143,7 +136,7 @@ export const deleteCarouselBanner = async (req, res) => {
 // Update banner order
 export const updateBannerOrder = async (req, res) => {
   try {
-    const { orders } = req.body; // Array of { id, order } objects
+    const { orders } = req.body;
 
     const updatePromises = orders.map(({ id, order }) =>
       CarouselBanner.findByIdAndUpdate(id, { order }, { new: true })

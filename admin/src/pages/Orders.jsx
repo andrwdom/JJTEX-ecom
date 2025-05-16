@@ -235,12 +235,20 @@ const Orders = ({ token, setToken }) => {
                     }
                   })}
                 </div>
-                <p className='mt-3 mb-2 font-medium'>{order.address.firstName + " " + order.address.lastName}</p>
+                <p className='mt-3 mb-2 font-medium'>
+                  {order.address ? `${order.address.firstName || 'N/A'} ${order.address.lastName || ''}` : 'Customer Name Not Available'}
+                </p>
                 <div>
-                  <p>{order.address.street + ","}</p>
-                  <p>{order.address.city + ", " + order.address.state + ", " + order.address.country + ", " + order.address.zipcode}</p>
+                  {order.address ? (
+                    <>
+                      <p>{order.address.street + ","}</p>
+                      <p>{order.address.city + ", " + order.address.state + ", " + order.address.country + ", " + order.address.zipcode}</p>
+                    </>
+                  ) : (
+                    <p>Address Not Available</p>
+                  )}
                 </div>
-                <p>{order.address.phone}</p>
+                <p>{order.address?.phone || 'Phone Not Available'}</p>
               </div>
               <div>
                 <p className='text-sm sm:text-[15px]'>Items : {order.items.length}</p>
