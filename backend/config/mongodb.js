@@ -25,10 +25,6 @@ const connectDB = async () => {
             auth: process.env.MONGODB_USER && {
                 username: process.env.MONGODB_USER,
                 password: process.env.MONGODB_PASSWORD
-            },
-            writeConcern: {
-                w: 'majority',
-                wtimeout: 0
             }
         };
 
