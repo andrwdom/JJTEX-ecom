@@ -56,10 +56,12 @@ app.use((req, res, next) => {
 
 // CORS configuration
 const corsOptions = {
-    origin: function (origin, callback) {
-        // Allow all origins during testing
-        callback(null, true);
-    },
+    origin: [
+        'https://admin.jjtextiles.com',
+        'https://jjtextiles.com',
+        'http://localhost:5173',  // For local development
+        'http://localhost:3000'   // For local development
+    ],
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization', 'token', 'x-requested-with'],
