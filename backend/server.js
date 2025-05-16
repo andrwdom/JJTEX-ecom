@@ -14,6 +14,11 @@ import carouselRouter from './routes/carouselRoutes.js'
 // App Config
 const app = express()
 const port = process.env.PORT || 4000
+
+// Trust proxy - required for rate limiting behind reverse proxy
+app.set('trust proxy', 1)
+
+// Connect to MongoDB
 connectDB()
 
 // Debug logging middleware
@@ -55,13 +60,25 @@ app.use((req, res, next) => {
 });
 
 // CORS configuration
+const allowedOrigins = [
+    'https://admin.jjtextiles.com',
+    'https://www.jjtextiles.com',
+    'https://jjtextiles.com',
+    'http://localhost:5173',
+    'http://localhost:3000'
+];
+
 const corsOptions = {
-    origin: [
-        'https://admin.jjtextiles.com',
-        'https://jjtextiles.com',
-        'http://localhost:5173',  // For local development
-        'http://localhost:3000'   // For local development
-    ],
+    origin: function (origin, callback) {
+        // Allow requests with no origin (like mobile apps or curl requests)
+        if (!origin) return callback(null, true);
+        
+        if (allowedOrigins.indexOf(origin) !== -1) {
+            callback(null, true);
+        } else {
+            callback(new Error('Not allowed by CORS'));
+        }
+    },
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization', 'token', 'x-requested-with'],
@@ -86,7 +103,19 @@ app.get('/', (req, res) => {
     res.send("API Working")
 })
 
-// Error handling middleware
+// CORS error handler
+app.use((err, req, res, next) => {
+    if (err.message === 'Not allowed by CORS') {
+        res.status(403).json({
+            success: false,
+            message: 'CORS: Origin not allowed'
+        });
+    } else {
+        next(err);
+    }
+});
+
+// General error handling middleware
 app.use((err, req, res, next) => {
     console.error(err.stack)
     res.status(500).json({
@@ -96,4 +125,23 @@ app.use((err, req, res, next) => {
     })
 })
 
-app.listen(port, () => console.log(`Server running on port ${port}`))
+// Graceful shutdown
+process.on('SIGTERM', () => {
+    console.log('Received SIGTERM. Performing graceful shutdown...');
+    app.close(() => {
+        console.log('Server closed. Exiting process.');
+        process.exit(0);
+    });
+});
+
+const server = app.listen(port, () => console.log(`Server running on port ${port}`))
+
+// Handle server errors
+server.on('error', (error) => {
+    if (error.code === 'EADDRINUSE') {
+        console.error(`Port ${port} is already in use. Please choose a different port or stop the running process.`);
+        process.exit(1);
+    } else {
+        console.error('Server error:', error);
+    }
+});
