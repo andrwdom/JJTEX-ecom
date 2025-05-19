@@ -1,4 +1,4 @@
-import React, { useContext, useEffect, useState, useRef } from 'react'
+import React, { useContext, useEffect, useState, useRef, useCallback } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { ShopContext } from '../context/ShopContext';
 import { assets } from '../assets/assets';
@@ -144,6 +144,7 @@ const Product = () => {
   const [showStickyBar, setShowStickyBar] = useState(false);
   const galleryRef = useRef(null);
   const [showShareOptions, setShowShareOptions] = useState(false);
+  const lastScrollY = useRef(0);
 
   const fetchProductData = async () => {
     try {
@@ -171,18 +172,52 @@ const Product = () => {
     window.scrollTo(0, 0);
   }, []);
 
-  // Show sticky bar on scroll (mobile only)
+  // Optimized scroll handler with debounce
+  const handleScroll = useCallback(() => {
+    if (window.innerWidth >= 640) return;
+    
+    const currentScrollY = window.scrollY;
+    const scrollThreshold = 200;
+    
+    // Only update if we've crossed the threshold
+    if (currentScrollY > scrollThreshold && !showStickyBar) {
+      setShowStickyBar(true);
+    } else if (currentScrollY <= scrollThreshold && showStickyBar) {
+      setShowStickyBar(false);
+    }
+    
+    lastScrollY.current = currentScrollY;
+  }, [showStickyBar]);
+
   useEffect(() => {
-    const handleScroll = () => {
-      if (window.innerWidth < 640) {
-        setShowStickyBar(window.scrollY > 200);
-      } else {
-        setShowStickyBar(false);
-      }
-    };
-    window.addEventListener('scroll', handleScroll);
+    window.addEventListener('scroll', handleScroll, { passive: true });
     return () => window.removeEventListener('scroll', handleScroll);
+  }, [handleScroll]);
+
+  // Optimized size selection handler
+  const handleSizeSelection = useCallback((item) => {
+    setSize(item.size);
+    setSelectedStock(item.stock);
   }, []);
+
+  // Optimized add to cart handler
+  const handleAddToCart = useCallback(() => {
+    if (!size) {
+      toast.error('Select Product Size');
+      return;
+    }
+    addToCart(productData._id, size);
+  }, [size, productData, addToCart]);
+
+  // Optimized buy now handler
+  const handleBuyNow = useCallback(() => {
+    if (!size) {
+      toast.error('Select Product Size');
+      return;
+    }
+    addToCart(productData._id, size);
+    navigate('/place-order');
+  }, [size, productData, addToCart, navigate]);
 
   if (loading) {
     return (
@@ -200,10 +235,10 @@ const Product = () => {
     );
   }
 
-  return productData ? (
-    <div className="border-t-2 pt-4 sm:pt-10 transition-opacity ease-in duration-500 opacity-100 bg-white min-h-screen">
+  return (
+    <div className="border-t-2 pt-4 sm:pt-10 transition-opacity ease-in duration-500 opacity-100 bg-white min-h-screen pb-20 sm:pb-0">
       {/* Back button for mobile */}
-      <div className="sm:hidden px-4 mb-2">
+      <div className="sm:hidden px-4 mb-2 sticky top-0 bg-white z-20">
         <button onClick={() => navigate(-1)} className="flex items-center gap-2 text-gray-500 hover:text-black py-2">
           <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
@@ -211,6 +246,7 @@ const Product = () => {
           Back
         </button>
       </div>
+
       <div className="flex flex-col md:flex-row gap-8 md:gap-10 px-2 sm:px-8 max-w-6xl mx-auto">
         {/* Image Gallery */}
         <div className="flex-1 flex flex-col items-center w-full">
@@ -236,20 +272,21 @@ const Product = () => {
             {/* Thumbnails - horizontal scroll on mobile */}
             <div
               ref={galleryRef}
-              className="flex gap-2 mt-2 overflow-x-auto scrollbar-hide px-1"
+              className="flex gap-2 mt-2 overflow-x-auto scrollbar-hide px-1 snap-x snap-mandatory"
             >
               {productData.image.map((img, idx) => (
                 <img
                   key={idx}
                   src={img}
                   alt={productData.name}
-                  className={`w-16 h-16 object-cover rounded-lg cursor-pointer border-2 transition-all duration-200 ${img === image ? 'border-pink-500 scale-105' : 'border-gray-200'}`}
+                  className={`w-16 h-16 object-cover rounded-lg cursor-pointer border-2 transition-all duration-200 snap-center ${img === image ? 'border-pink-500 scale-105' : 'border-gray-200'}`}
                   onClick={() => setImage(img)}
                 />
               ))}
             </div>
           </div>
         </div>
+
         {/* Product Info */}
         <motion.div 
           initial={{ opacity: 0, y: 20 }}
@@ -260,16 +297,14 @@ const Product = () => {
           <h1 className="text-2xl sm:text-3xl font-bold leading-tight mb-1">{productData.name}</h1>
           <p className="text-gray-600 text-base sm:text-lg mb-2">{productData.description}</p>
           <div className="text-3xl font-semibold text-pink-500 mb-2">{currency}{productData.price}</div>
+
           {/* Size Selector */}
           <div className="flex flex-col gap-2 my-2">
             <p className="text-sm font-medium text-gray-700 mb-1">Select Size</p>
             <div className="flex gap-2 flex-wrap">
               {productData.sizes.map((item, index) => (
                 <button
-                  onClick={() => {
-                    setSize(item.size);
-                    setSelectedStock(item.stock);
-                  }}
+                  onClick={() => handleSizeSelection(item)}
                   className={`rounded-full border py-2 px-5 text-sm font-semibold transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-pink-400 ${item.size === size ? 'bg-pink-100 border-pink-500 text-pink-600 shadow' : 'bg-gray-100 border-gray-200 text-gray-700'}`}
                   key={index}
                 >
@@ -288,7 +323,7 @@ const Product = () => {
                       transition={{ repeat: Infinity, duration: 1.2 }}
                       className="ml-2 px-2 py-0.5 rounded-full bg-pink-100 text-pink-600 text-xs font-semibold shadow-sm"
                     >
-                      Only a few left! Don't miss it
+                      Only a few left!
                     </motion.span>
                   )}
                 </div>
@@ -306,18 +341,7 @@ const Product = () => {
                       width: `${Math.min((selectedStock / 20) * 100, 100)}%`,
                       transition: { duration: 0.8, ease: "easeOut" }
                     }}
-                  >
-                    <motion.div
-                      className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent"
-                      initial={{ x: "-100%" }}
-                      animate={{ x: "100%" }}
-                      transition={{ 
-                        repeat: Infinity,
-                        duration: 1.5,
-                        ease: "linear"
-                      }}
-                    />
-                  </motion.div>
+                  />
                 </div>
                 <div className="flex justify-between text-xs text-gray-500">
                   <span>0</span>
@@ -335,18 +359,17 @@ const Product = () => {
               </div>
             )}
           </div>
+
           {/* Action Buttons (desktop) */}
           <div className="hidden sm:flex gap-4 mt-2">
-            <button onClick={() => addToCart(productData._id, size)} className="bg-pink-400 rounded-full text-white px-8 py-3 text-sm font-semibold hover:bg-pink-600 transition-colors">ADD TO CART</button>
+            <button 
+              onClick={handleAddToCart} 
+              className="bg-pink-400 rounded-full text-white px-8 py-3 text-sm font-semibold hover:bg-pink-600 transition-colors"
+            >
+              ADD TO CART
+            </button>
             <button
-              onClick={() => {
-                if (!size) {
-                  toast.error('Select Product Size');
-                  return;
-                }
-                addToCart(productData._id, size);
-                setTimeout(() => navigate('/place-order'), 200);
-              }}
+              onClick={handleBuyNow}
               className="bg-black rounded-full text-white px-8 py-3 text-sm font-semibold hover:bg-gray-800 transition-colors"
             >
               BUY NOW
@@ -354,26 +377,25 @@ const Product = () => {
           </div>
         </motion.div>
       </div>
+
       {/* Sticky Action Bar (mobile) */}
       <AnimatePresence>
         {showStickyBar && (
           <motion.div
-            initial={{ y: 80, opacity: 0 }}
+            initial={{ y: 100, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
-            exit={{ y: 80, opacity: 0 }}
+            exit={{ y: 100, opacity: 0 }}
             transition={{ duration: 0.3 }}
             className="fixed bottom-0 left-0 right-0 z-30 bg-white border-t shadow-lg flex sm:hidden gap-2 px-4 py-3"
           >
-            <button onClick={() => addToCart(productData._id, size)} className="flex-1 bg-pink-400 rounded-full text-white py-3 text-base font-semibold hover:bg-pink-600 transition-colors">Add to Cart</button>
+            <button 
+              onClick={handleAddToCart} 
+              className="flex-1 bg-pink-400 rounded-full text-white py-3 text-base font-semibold hover:bg-pink-600 transition-colors"
+            >
+              Add to Cart
+            </button>
             <button
-              onClick={() => {
-                if (!size) {
-                  toast.error('Select Product Size');
-                  return;
-                }
-                addToCart(productData._id, size);
-                setTimeout(() => navigate('/place-order'), 200);
-              }}
+              onClick={handleBuyNow}
               className="flex-1 bg-black rounded-full text-white py-3 text-base font-semibold hover:bg-gray-800 transition-colors"
             >
               Buy Now
@@ -381,15 +403,17 @@ const Product = () => {
           </motion.div>
         )}
       </AnimatePresence>
+
       {/* Share Options Modal */}
       <AnimatePresence>
         {showShareOptions && (
           <ShareOptions product={productData} onClose={() => setShowShareOptions(false)} />
         )}
       </AnimatePresence>
+
       <RelatedProducts category={productData.category} subCategory={productData.subCategory} />
     </div>
-  ) : <div className=' opacity-0'></div>
-}
+  );
+};
 
-export default Product
+export default Product;

@@ -90,19 +90,14 @@ const allowedOrigins = [
 
 const corsOptions = {
     origin: function (origin, callback) {
-        console.log('Incoming request from origin:', origin);
-        
         // Allow requests with no origin (like mobile apps or curl requests)
         if (!origin) {
-            console.log('No origin provided, allowing request');
             return callback(null, true);
         }
         
         if (allowedOrigins.indexOf(origin) !== -1) {
-            console.log('Origin allowed:', origin);
             callback(null, true);
         } else {
-            console.log('CORS blocked request from origin:', origin);
             callback(new Error('Not allowed by CORS'));
         }
     },
@@ -144,11 +139,11 @@ app.use((req, res, next) => {
     next();
 });
 
+// Apply CORS to all routes before other middleware
+app.use(cors(corsOptions));
+
 // Handle preflight requests
 app.options('*', cors(corsOptions));
-
-// Apply CORS to all routes
-app.use(cors(corsOptions));
 
 // middlewares
 app.use(express.json())
@@ -180,7 +175,7 @@ app.use((err, req, res, next) => {
         });
         
         // Send CORS headers even for errors
-        res.setHeader('Access-Control-Allow-Origin', 'https://admin.jjtextiles.com');
+        res.setHeader('Access-Control-Allow-Origin', req.headers.origin || 'https://admin.jjtextiles.com');
         res.setHeader('Access-Control-Allow-Credentials', 'true');
         
         res.status(403).json({
