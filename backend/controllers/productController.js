@@ -4,10 +4,21 @@ import productModel from "../models/productModel.js"
 // function for add product
 const addProduct = async (req, res) => {
     try {
+        console.log('Add Product Request Body:', req.body);
+        console.log('Add Product Files:', req.files);
+
         const { name, description, price, category, subCategory, type, sizes, bestseller } = req.body
 
         // Validate required fields
         if (!name || !description || !price || !category || !subCategory || !type) {
+            console.log('Missing fields:', {
+                name: !name,
+                description: !description,
+                price: !price,
+                category: !category,
+                subCategory: !subCategory,
+                type: !type
+            });
             return res.status(400).json({ 
                 success: false, 
                 message: "Missing required fields",
@@ -24,6 +35,7 @@ const addProduct = async (req, res) => {
 
         // Validate price is a number
         if (isNaN(Number(price)) || Number(price) <= 0) {
+            console.log('Invalid price:', price);
             return res.status(400).json({
                 success: false,
                 message: "Price must be a positive number"
@@ -33,14 +45,19 @@ const addProduct = async (req, res) => {
         // Validate sizes
         let parsedSizes;
         try {
+            console.log('Raw sizes:', sizes);
             parsedSizes = JSON.parse(sizes);
             if (!Array.isArray(parsedSizes)) {
+                console.log('Sizes is not an array:', parsedSizes);
                 throw new Error('Sizes must be an array');
             }
+            console.log('Parsed sizes:', parsedSizes);
         } catch (error) {
+            console.error('Sizes parsing error:', error);
             return res.status(400).json({
                 success: false,
-                message: "Invalid sizes format"
+                message: "Invalid sizes format",
+                error: error.message
             });
         }
 
@@ -49,9 +66,12 @@ const addProduct = async (req, res) => {
         const image3 = req.files?.image3?.[0]
         const image4 = req.files?.image4?.[0]
 
+        console.log('Image files:', { image1, image2, image3, image4 });
+
         const images = [image1, image2, image3, image4].filter((item) => item !== undefined)
 
         if (images.length === 0) {
+            console.log('No images provided');
             return res.status(400).json({ 
                 success: false, 
                 message: "At least one image is required" 
@@ -61,23 +81,29 @@ const addProduct = async (req, res) => {
         // Upload images to cloudinary
         let imagesUrl;
         try {
+            console.log('Starting image upload to Cloudinary');
             imagesUrl = await Promise.all(
                 images.map(async (item) => {
                     if (!item.path) {
+                        console.error('Invalid image file:', item);
                         throw new Error('Invalid image file');
                     }
+                    console.log('Uploading image:', item.path);
                     let result = await cloudinary.uploader.upload(item.path, { 
                         resource_type: 'image',
                         folder: 'jjtextiles/products'
                     });
+                    console.log('Image uploaded successfully:', result.secure_url);
                     return result.secure_url;
                 })
             );
+            console.log('All images uploaded successfully:', imagesUrl);
         } catch (error) {
             console.error('Cloudinary Upload Error:', error);
             return res.status(500).json({
                 success: false,
-                message: "Failed to upload images"
+                message: "Failed to upload images",
+                error: error.message
             });
         }
 
@@ -94,8 +120,12 @@ const addProduct = async (req, res) => {
             date: Date.now()
         }
 
+        console.log('Creating product with data:', productData);
+
         const product = new productModel(productData);
         await product.save();
+
+        console.log('Product saved successfully:', product._id);
 
         res.status(201).json({ 
             success: true, 
@@ -107,7 +137,12 @@ const addProduct = async (req, res) => {
             }
         });
     } catch (error) {
-        console.error('Add Product Error:', error);
+        console.error('Add Product Error:', {
+            message: error.message,
+            stack: error.stack,
+            body: req.body,
+            files: req.files
+        });
         res.status(500).json({ 
             success: false, 
             message: "Failed to add product",
