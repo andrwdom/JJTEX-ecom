@@ -63,9 +63,7 @@ app.use((req, res, next) => {
 const allowedOrigins = [
     'https://admin.jjtextiles.com',
     'https://www.jjtextiles.com',
-    'https://jjtextiles.com',
-    'http://localhost:5173',
-    'http://localhost:3000'
+    'https://jjtextiles.com'
 ];
 
 const corsOptions = {
