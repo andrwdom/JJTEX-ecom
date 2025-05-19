@@ -64,16 +64,22 @@ const allowedOrigins = [
     'https://admin.jjtextiles.com',
     'https://www.jjtextiles.com',
     'https://jjtextiles.com',
-    'http://localhost:5173',  // For local development
-    'http://localhost:3000'   // For local development
+    'http://localhost:5173',
+    'http://localhost:3000'
 ];
 
 const corsOptions = {
     origin: function (origin, callback) {
+        console.log('Incoming request from origin:', origin);
+        
         // Allow requests with no origin (like mobile apps or curl requests)
-        if (!origin) return callback(null, true);
+        if (!origin) {
+            console.log('No origin provided, allowing request');
+            return callback(null, true);
+        }
         
         if (allowedOrigins.indexOf(origin) !== -1) {
+            console.log('Origin allowed:', origin);
             callback(null, true);
         } else {
             console.log('CORS blocked request from origin:', origin);
@@ -82,11 +88,20 @@ const corsOptions = {
     },
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'token', 'x-requested-with'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'token', 'x-requested-with', 'Accept', 'Origin', 'X-Requested-With'],
     exposedHeaders: ['Content-Range', 'X-Content-Range'],
     preflightContinue: false,
-    optionsSuccessStatus: 204
+    optionsSuccessStatus: 204,
+    maxAge: 86400 // 24 hours
 }
+
+// Debug middleware for CORS
+app.use((req, res, next) => {
+    console.log('Request Headers:', req.headers);
+    console.log('Request Method:', req.method);
+    console.log('Request URL:', req.url);
+    next();
+});
 
 // middlewares
 app.use(cors(corsOptions))
@@ -109,15 +124,18 @@ app.get('/', (req, res) => {
 // CORS error handler
 app.use((err, req, res, next) => {
     if (err.message === 'Not allowed by CORS') {
-        console.error('CORS Error:', {
+        console.error('CORS Error Details:', {
             origin: req.headers.origin,
             method: req.method,
-            path: req.path
+            path: req.path,
+            headers: req.headers
         });
+        
         res.status(403).json({
             success: false,
             message: 'CORS: Origin not allowed',
-            origin: req.headers.origin
+            origin: req.headers.origin,
+            allowedOrigins: allowedOrigins
         });
     } else {
         next(err);
