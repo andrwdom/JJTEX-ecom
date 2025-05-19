@@ -6,8 +6,42 @@ const addProduct = async (req, res) => {
     try {
         const { name, description, price, category, subCategory, type, sizes, bestseller } = req.body
 
+        // Validate required fields
         if (!name || !description || !price || !category || !subCategory || !type) {
-            return res.json({ success: false, message: "Missing required fields" });
+            return res.status(400).json({ 
+                success: false, 
+                message: "Missing required fields",
+                missing: {
+                    name: !name,
+                    description: !description,
+                    price: !price,
+                    category: !category,
+                    subCategory: !subCategory,
+                    type: !type
+                }
+            });
+        }
+
+        // Validate price is a number
+        if (isNaN(Number(price)) || Number(price) <= 0) {
+            return res.status(400).json({
+                success: false,
+                message: "Price must be a positive number"
+            });
+        }
+
+        // Validate sizes
+        let parsedSizes;
+        try {
+            parsedSizes = JSON.parse(sizes);
+            if (!Array.isArray(parsedSizes)) {
+                throw new Error('Sizes must be an array');
+            }
+        } catch (error) {
+            return res.status(400).json({
+                success: false,
+                message: "Invalid sizes format"
+            });
         }
 
         const image1 = req.files?.image1?.[0]
@@ -18,15 +52,34 @@ const addProduct = async (req, res) => {
         const images = [image1, image2, image3, image4].filter((item) => item !== undefined)
 
         if (images.length === 0) {
-            return res.json({ success: false, message: "At least one image is required" });
+            return res.status(400).json({ 
+                success: false, 
+                message: "At least one image is required" 
+            });
         }
 
-        let imagesUrl = await Promise.all(
-            images.map(async (item) => {
-                let result = await cloudinary.uploader.upload(item.path, { resource_type: 'image' });
-                return result.secure_url
-            })
-        )
+        // Upload images to cloudinary
+        let imagesUrl;
+        try {
+            imagesUrl = await Promise.all(
+                images.map(async (item) => {
+                    if (!item.path) {
+                        throw new Error('Invalid image file');
+                    }
+                    let result = await cloudinary.uploader.upload(item.path, { 
+                        resource_type: 'image',
+                        folder: 'jjtextiles/products'
+                    });
+                    return result.secure_url;
+                })
+            );
+        } catch (error) {
+            console.error('Cloudinary Upload Error:', error);
+            return res.status(500).json({
+                success: false,
+                message: "Failed to upload images"
+            });
+        }
 
         const productData = {
             name,
@@ -36,18 +89,30 @@ const addProduct = async (req, res) => {
             subCategory,
             type,
             bestseller: bestseller === "true" ? true : false,
-            sizes: JSON.parse(sizes),
+            sizes: parsedSizes,
             image: imagesUrl,
             date: Date.now()
         }
 
         const product = new productModel(productData);
-        await product.save()
+        await product.save();
 
-        res.json({ success: true, message: "Product Added Successfully" })
+        res.status(201).json({ 
+            success: true, 
+            message: "Product Added Successfully",
+            product: {
+                id: product._id,
+                name: product.name,
+                price: product.price
+            }
+        });
     } catch (error) {
         console.error('Add Product Error:', error);
-        res.json({ success: false, message: error.message || "Failed to add product" })
+        res.status(500).json({ 
+            success: false, 
+            message: "Failed to add product",
+            error: process.env.NODE_ENV === 'development' ? error.message : undefined
+        });
     }
 }
 
