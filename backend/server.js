@@ -30,10 +30,14 @@ app.use((req, res, next) => {
 // Rate limiting
 const limiter = rateLimit({
     windowMs: 15 * 60 * 1000, // 15 minutes
-    max: 100, // Limit each IP to 100 requests per windowMs
+    max: 1000, // Increased from 100 to 1000 requests per windowMs
     message: 'Too many requests from this IP, please try again later.',
     standardHeaders: true,
-    legacyHeaders: false
+    legacyHeaders: false,
+    skip: (req) => {
+        // Skip rate limiting for admin domain
+        return req.headers.origin === 'https://admin.jjtextiles.com';
+    }
 });
 
 // Apply rate limiting to all routes
@@ -42,8 +46,14 @@ app.use(limiter);
 // Apply stricter rate limiting to auth routes
 const authLimiter = rateLimit({
     windowMs: 60 * 60 * 1000, // 1 hour
-    max: 5, // 5 attempts per hour
-    message: 'Too many login attempts, please try again later'
+    max: 20, // Increased from 5 to 20 attempts per hour
+    message: 'Too many login attempts, please try again later',
+    standardHeaders: true,
+    legacyHeaders: false,
+    skip: (req) => {
+        // Skip rate limiting for admin domain
+        return req.headers.origin === 'https://admin.jjtextiles.com';
+    }
 });
 
 app.use('/api/user/login', authLimiter);
@@ -95,11 +105,15 @@ const corsOptions = {
     maxAge: 86400 // 24 hours
 }
 
-// Debug middleware for CORS
+// Debug middleware for CORS and rate limiting
 app.use((req, res, next) => {
-    console.log('Request Headers:', req.headers);
-    console.log('Request Method:', req.method);
-    console.log('Request URL:', req.url);
+    console.log('Request Details:', {
+        origin: req.headers.origin,
+        method: req.method,
+        url: req.url,
+        headers: req.headers,
+        ip: req.ip
+    });
     next();
 });
 
@@ -128,7 +142,8 @@ app.use((err, req, res, next) => {
             origin: req.headers.origin,
             method: req.method,
             path: req.path,
-            headers: req.headers
+            headers: req.headers,
+            ip: req.ip
         });
         
         res.status(403).json({
