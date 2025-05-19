@@ -63,7 +63,9 @@ app.use((req, res, next) => {
 const allowedOrigins = [
     'https://admin.jjtextiles.com',
     'https://www.jjtextiles.com',
-    'https://jjtextiles.com'
+    'https://jjtextiles.com',
+    'http://localhost:5173',  // For local development
+    'http://localhost:3000'   // For local development
 ];
 
 const corsOptions = {
@@ -74,13 +76,16 @@ const corsOptions = {
         if (allowedOrigins.indexOf(origin) !== -1) {
             callback(null, true);
         } else {
+            console.log('CORS blocked request from origin:', origin);
             callback(new Error('Not allowed by CORS'));
         }
     },
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization', 'token', 'x-requested-with'],
-    exposedHeaders: ['Content-Range', 'X-Content-Range']
+    exposedHeaders: ['Content-Range', 'X-Content-Range'],
+    preflightContinue: false,
+    optionsSuccessStatus: 204
 }
 
 // middlewares
@@ -104,9 +109,15 @@ app.get('/', (req, res) => {
 // CORS error handler
 app.use((err, req, res, next) => {
     if (err.message === 'Not allowed by CORS') {
+        console.error('CORS Error:', {
+            origin: req.headers.origin,
+            method: req.method,
+            path: req.path
+        });
         res.status(403).json({
             success: false,
-            message: 'CORS: Origin not allowed'
+            message: 'CORS: Origin not allowed',
+            origin: req.headers.origin
         });
     } else {
         next(err);
