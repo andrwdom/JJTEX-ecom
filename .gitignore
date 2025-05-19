@@ -10,6 +10,10 @@
 !.gitignore
 !README.md
 
+# Allow frontend source files
+!frontend/src/
+!frontend/src/**/*
+
 # Node modules and env files in any directory
 **/node_modules/
 **/.env
