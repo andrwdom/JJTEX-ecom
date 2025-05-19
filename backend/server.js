@@ -30,42 +30,52 @@ app.use((req, res, next) => {
 // Rate limiting
 const limiter = rateLimit({
     windowMs: 15 * 60 * 1000, // 15 minutes
-    max: 1000, // Increased from 100 to 1000 requests per windowMs
+    max: 1000, // 1000 requests per windowMs
     message: 'Too many requests from this IP, please try again later.',
     standardHeaders: true,
     legacyHeaders: false,
     skip: (req) => {
-        // Skip rate limiting for admin domain
-        return req.headers.origin === 'https://admin.jjtextiles.com';
+        // Skip rate limiting for admin domain and OPTIONS requests
+        return req.headers.origin === 'https://admin.jjtextiles.com' || req.method === 'OPTIONS';
     }
 });
 
 // Apply rate limiting to all routes
 app.use(limiter);
 
-// Apply stricter rate limiting to auth routes
+// Apply rate limiting to auth routes with higher limits
 const authLimiter = rateLimit({
     windowMs: 60 * 60 * 1000, // 1 hour
-    max: 20, // Increased from 5 to 20 attempts per hour
+    max: 50, // 50 attempts per hour
     message: 'Too many login attempts, please try again later',
     standardHeaders: true,
     legacyHeaders: false,
     skip: (req) => {
-        // Skip rate limiting for admin domain
-        return req.headers.origin === 'https://admin.jjtextiles.com';
+        // Skip rate limiting for admin domain and OPTIONS requests
+        return req.headers.origin === 'https://admin.jjtextiles.com' || req.method === 'OPTIONS';
     }
 });
 
+// Apply auth rate limiting only to specific routes
 app.use('/api/user/login', authLimiter);
 app.use('/api/user/admin', authLimiter);
 
 // Security headers
 app.use((req, res, next) => {
+    // Set security headers
     res.setHeader('X-Content-Type-Options', 'nosniff');
     res.setHeader('X-Frame-Options', 'DENY');
     res.setHeader('X-XSS-Protection', '1; mode=block');
     res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
-    res.setHeader('Content-Security-Policy', "default-src 'self'; img-src 'self' data: https: http:; script-src 'self' 'unsafe-inline' 'unsafe-eval' https:; style-src 'self' 'unsafe-inline' https:; connect-src 'self' https: http:;");
+    
+    // Update CSP to allow admin domain
+    res.setHeader('Content-Security-Policy', 
+        "default-src 'self' https://admin.jjtextiles.com; " +
+        "img-src 'self' data: https: http:; " +
+        "script-src 'self' 'unsafe-inline' 'unsafe-eval' https:; " +
+        "style-src 'self' 'unsafe-inline' https:; " +
+        "connect-src 'self' https://api.jjtextiles.com https://admin.jjtextiles.com;"
+    );
     next();
 });
 
@@ -98,8 +108,24 @@ const corsOptions = {
     },
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'token', 'x-requested-with', 'Accept', 'Origin', 'X-Requested-With'],
-    exposedHeaders: ['Content-Range', 'X-Content-Range'],
+    allowedHeaders: [
+        'Content-Type', 
+        'Authorization', 
+        'token', 
+        'x-requested-with', 
+        'Accept', 
+        'Origin', 
+        'X-Requested-With',
+        'Access-Control-Allow-Origin',
+        'Access-Control-Allow-Headers',
+        'Access-Control-Allow-Methods'
+    ],
+    exposedHeaders: [
+        'Content-Range', 
+        'X-Content-Range',
+        'Access-Control-Allow-Origin',
+        'Access-Control-Allow-Credentials'
+    ],
     preflightContinue: false,
     optionsSuccessStatus: 204,
     maxAge: 86400 // 24 hours
@@ -112,13 +138,19 @@ app.use((req, res, next) => {
         method: req.method,
         url: req.url,
         headers: req.headers,
-        ip: req.ip
+        ip: req.ip,
+        timestamp: new Date().toISOString()
     });
     next();
 });
 
+// Handle preflight requests
+app.options('*', cors(corsOptions));
+
+// Apply CORS to all routes
+app.use(cors(corsOptions));
+
 // middlewares
-app.use(cors(corsOptions))
 app.use(express.json())
 app.use(express.urlencoded({ extended: true }))
 app.use('/uploads', express.static('uploads'))
@@ -143,8 +175,13 @@ app.use((err, req, res, next) => {
             method: req.method,
             path: req.path,
             headers: req.headers,
-            ip: req.ip
+            ip: req.ip,
+            timestamp: new Date().toISOString()
         });
+        
+        // Send CORS headers even for errors
+        res.setHeader('Access-Control-Allow-Origin', 'https://admin.jjtextiles.com');
+        res.setHeader('Access-Control-Allow-Credentials', 'true');
         
         res.status(403).json({
             success: false,
