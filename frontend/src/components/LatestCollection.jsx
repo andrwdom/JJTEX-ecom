@@ -1,9 +1,9 @@
 import React, { useContext, useEffect, useState } from 'react'
 import { ShopContext } from '../context/ShopContext'
-import { Link } from 'react-router-dom'
+import ProductCard from './ProductCard'
 
 const LatestCollection = () => {
-    const { products, currency } = useContext(ShopContext)
+    const { products } = useContext(ShopContext)
     const [latestProducts, setLatestProducts] = useState([])
 
     useEffect(() => {
@@ -31,32 +31,7 @@ const LatestCollection = () => {
             {/* Products Grid */}
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-6 max-w-7xl mx-auto">
                 {latestProducts.map((product) => (
-                    <Link 
-                        to={`/product/${product._id}`} 
-                        key={product._id}
-                        className="group"
-                    >
-                        <div className="bg-white rounded-[2rem] p-4 shadow-sm hover:shadow-md transition-shadow">
-                            {/* Product Image */}
-                            <div className="aspect-[4/5] rounded-[1.5rem] overflow-hidden bg-gray-50 mb-4">
-                                <img 
-                                    src={product.image[0]} 
-                                    alt={product.name}
-                                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                                />
-                            </div>
-                            
-                            {/* Product Info */}
-                            <div className="px-2">
-                                <h3 className="text-gray-800 font-medium mb-1">
-                                    {product.name}
-                                </h3>
-                                <p className="text-[#FF6EBB] font-semibold">
-                                    {currency}{product.price}
-                                </p>
-                            </div>
-                        </div>
-                    </Link>
+                    <ProductCard key={product._id} product={product} />
                 ))}
 
                 {/* Placeholder cards if no products */}

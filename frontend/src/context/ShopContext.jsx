@@ -7,6 +7,8 @@ export const ShopContext = createContext();
 
 const ShopContextProvider = (props) => {
     const currency = '₹';
+    const currencySymbol = '₹';
+    const currencyCode = 'INR';
     const delivery_fee = 10;
     const backendUrl = import.meta.env.VITE_BACKEND_URL;
     const [search, setSearch] = useState('');
@@ -206,6 +208,8 @@ const ShopContextProvider = (props) => {
     const value = {
         products,
         currency,
+        currencySymbol,
+        currencyCode,
         delivery_fee,
         search,
         setSearch,

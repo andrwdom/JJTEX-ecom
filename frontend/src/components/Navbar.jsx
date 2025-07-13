@@ -58,9 +58,10 @@ const Navbar = () => {
       transition={{ duration: 0.5 }}
       className={`fixed top-0 left-0 right-0 z-[100] transition-all duration-300 ${
         isScrolled 
-          ? 'bg-white/50 backdrop-blur-md shadow-lg' 
-          : 'bg-[#f3e5f5]'
+          ? 'bg-white/60 backdrop-blur-lg shadow-xl' 
+          : 'bg-gradient-to-r from-[#f3e5f5] via-[#ffe0f7] to-[#e0c3fc]'
       }`}
+      style={{ willChange: 'background, box-shadow, filter' }}
     >
       <div className="px-4 sm:px-6 pb-6">
         <div className="flex flex-col gap-4">
@@ -80,8 +81,8 @@ const Navbar = () => {
             </div>
             {/* Center: Logo */}
             <div className="flex justify-center">
-              <Link to="/" className="flex items-center">
-                <img src={assets.logo1} className='w-32' alt="" />
+              <Link to="/" className="flex items-center gap-2">
+                <img src={assets.logo1} className='w-32' alt="JJTEX Logo" />
               </Link>
             </div>
             {/* Right: Icons */}
@@ -125,9 +126,16 @@ const Navbar = () => {
               whileHover={{ scale: 1.02 }}
               className="flex flex-col items-start"
             >
-              <Link to="/" className="flex items-center mb-2">
+              <Link to="/" className="flex items-center gap-2 mb-2 group">
                 <div className="flex items-center gap-2">
-                  <img src={assets.logo1} className='mb- w-32' alt="" />
+                  <motion.img 
+                    src={assets.logo1} 
+                    className='w-32 drop-shadow-lg group-hover:scale-105 group-active:scale-95 transition-transform duration-200' 
+                    alt="JJTEX Logo"
+                    whileHover={{ scale: 1.08 }}
+                    whileTap={{ scale: 0.96 }}
+                    style={{ willChange: 'transform' }}
+                  />
                 </div>
               </Link>
               <p className="text-gray-600 text-sm">
@@ -146,7 +154,14 @@ const Navbar = () => {
               >
                 <Link to="/cart" className="p-2 hover:bg-purple-300/20 rounded-lg transition-colors">
                   <div className="relative">
-                    <img src={assets.cart_icon} className="w-5 h-5" alt="Cart" />
+                    <motion.img 
+                      src={assets.cart_icon} 
+                      className="w-5 h-5 group-hover:scale-110 group-active:scale-95 transition-transform duration-200" 
+                      alt="Cart"
+                      whileHover={{ scale: 1.12 }}
+                      whileTap={{ scale: 0.96 }}
+                      style={{ willChange: 'transform' }}
+                    />
                     <AnimatePresence>
                       {getCartCount() > 0 && (
                         <motion.span
@@ -168,7 +183,14 @@ const Navbar = () => {
                 onClick={() => token ? navigate('/orders') : navigate('/login')}
                 className="p-2 hover:bg-purple-300/20 rounded-lg transition-colors relative"
               >
-                <img src={assets.profile_icon} className="w-5 h-5" alt="Profile" />
+                <motion.img 
+                  src={assets.profile_icon} 
+                  className="w-5 h-5 group-hover:scale-110 group-active:scale-95 transition-transform duration-200" 
+                  alt="Profile"
+                  whileHover={{ scale: 1.12 }}
+                  whileTap={{ scale: 0.96 }}
+                  style={{ willChange: 'transform' }}
+                />
               </motion.button>
             </div>
           </div>
@@ -188,12 +210,12 @@ const Navbar = () => {
                     className={({ isActive }) => 
                       `relative text-gray-700 hover:text-[#ff69b4] pb-2 font-medium transition-colors duration-300 ${
                         isActive 
-                          ? 'text-[#ff69b4] after:content-[""] after:absolute after:bottom-0 after:left-0 after:w-full after:h-0.5 after:bg-[#ff69b4] after:transform after:scale-x-100 after:transition-transform after:duration-300' 
-                          : 'after:content-[""] after:absolute after:bottom-0 after:left-0 after:w-full after:h-0.5 after:bg-[#ff69b4] after:transform after:scale-x-0 after:transition-transform after:duration-300 hover:after:scale-x-100'
+                          ? 'text-[#ff69b4] after:content-[""] after:absolute after:bottom-0 after:left-0 after:w-full after:h-0.5 after:bg-[#ff69b4] after:transform after:scale-x-100 after:transition-transform after:duration-300 after:rounded-full' 
+                          : 'after:content-[""] after:absolute after:bottom-0 after:left-0 after:w-full after:h-0.5 after:bg-[#ff69b4] after:transform after:scale-x-0 after:transition-transform after:duration-300 hover:after:scale-x-100 after:rounded-full'
                       }`
                     }
                   >
-                    {item}
+                    <span className="relative z-10">{item}</span>
                   </NavLink>
                 </li>
               ))}
@@ -209,8 +231,9 @@ const Navbar = () => {
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   exit={{ opacity: 0 }}
-                  className="fixed inset-0 bg-black/50 z-[101]"
+                  className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[101] transition-all duration-300"
                   onClick={() => setIsMenuOpen(false)}
+                  style={{ willChange: 'opacity, filter' }}
                 />
                 {/* Menu */}
                 <motion.div
@@ -222,7 +245,9 @@ const Navbar = () => {
                   className="fixed top-0 left-0 h-[100vh] w-[80%] max-w-sm bg-white z-[102] shadow-xl flex flex-col"
                 >
                   <div className="flex items-center justify-between p-4 border-b bg-[#f3e5f5]">
-                      <img src={assets.logo1} className="w-32" alt="Logo" />
+                      <div className="flex items-center gap-2">
+                        <img src={assets.logo1} className="w-32" alt="JJTEX Logo" />
+                      </div>
                       <button 
                         onClick={() => setIsMenuOpen(false)}
                       className="p-2 hover:bg-purple-300/20 rounded-lg text-gray-700"

@@ -63,7 +63,7 @@ const ProductCard = ({ product }) => {
       animate={{ opacity: 1, y: 0 }}
       whileHover={{ y: -5 }}
       className="group relative"
-      style={{overflow: 'visible'}}
+      style={{ overflow: 'visible', willChange: 'opacity, transform' }}
     >
       <Link 
         to={`/product/${product._id}`}
@@ -89,6 +89,7 @@ const ProductCard = ({ product }) => {
                 initial={{ opacity: 0 }}
                 animate={{ opacity: isImageLoaded ? 1 : 0 }}
                 exit={{ opacity: 0 }}
+                style={{ willChange: 'opacity, transform' }}
               />
             </AnimatePresence>
 

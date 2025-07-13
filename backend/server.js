@@ -10,10 +10,34 @@ import cartRouter from './routes/cartRoute.js'
 import orderRouter from './routes/orderRoute.js'
 import couponRouter from './routes/couponRoutes.js'
 import carouselRouter from './routes/carouselRoutes.js'
+import net from 'net'
 
 // App Config
 const app = express()
 const port = process.env.PORT || 4000
+
+// Function to check if a port is in use
+function checkPort(port) {
+    return new Promise((resolve) => {
+        const tester = net.createServer()
+            .once('error', err => (err.code === 'EADDRINUSE' ? resolve(true) : resolve(false)))
+            .once('listening', () => tester.once('close', () => resolve(false)).close())
+            .listen(port)
+    })
+}
+
+async function startServer() {
+    let currentPort = port
+    while (await checkPort(currentPort)) {
+        console.warn(`Port ${currentPort} is in use. Trying next port...`)
+        currentPort++
+    }
+    app.listen(currentPort, () => {
+        console.log(`Server running on port ${currentPort}`)
+    })
+}
+
+startServer()
 
 // Trust proxy - required for rate limiting behind reverse proxy
 app.set('trust proxy', 1)
@@ -206,16 +230,4 @@ process.on('SIGTERM', () => {
         console.log('Server closed. Exiting process.');
         process.exit(0);
     });
-});
-
-const server = app.listen(port, () => console.log(`Server running on port ${port}`))
-
-// Handle server errors
-server.on('error', (error) => {
-    if (error.code === 'EADDRINUSE') {
-        console.error(`Port ${port} is already in use. Please choose a different port or stop the running process.`);
-        process.exit(1);
-    } else {
-        console.error('Server error:', error);
-    }
 });

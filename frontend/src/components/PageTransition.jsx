@@ -8,19 +8,16 @@ const PageTransition = ({ children }) => {
     <AnimatePresence mode="wait">
       <motion.div
         key={location.pathname}
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        exit={{ opacity: 0, y: -20 }}
+        initial={{ opacity: 0, scale: 0.98 }}
+        animate={{ opacity: 1, scale: 1 }}
+        exit={{ opacity: 0, scale: 1.02 }}
         transition={{
           type: "spring",
-          stiffness: 260,
-          damping: 20,
-          duration: 0.3,
-          opacity: {
-            duration: 0.5,
-            ease: [0.4, 0, 0.2, 1]
-          }
+          stiffness: 320,
+          damping: 28,
+          opacity: { duration: 0.32, ease: [0.4, 0, 0.2, 1] }
         }}
+        style={{ willChange: 'opacity, transform' }}
       >
         {children}
       </motion.div>
