@@ -5,6 +5,7 @@
 !backend/
 !frontend/
 !admin/
+!deployment/
 
 # And not these files
 !.gitignore
@@ -13,6 +14,10 @@
 # Allow frontend source files
 !frontend/src/
 !frontend/src/**/*
+
+# Allow deployment files
+!deployment/
+!deployment/**/*
 
 # Node modules and env files in any directory
 **/node_modules/
