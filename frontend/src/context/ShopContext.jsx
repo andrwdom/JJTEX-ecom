@@ -2,6 +2,7 @@ import { createContext, useEffect, useState } from "react";
 import { toast } from "react-toastify";
 import { useNavigate } from "react-router-dom";
 import axios from 'axios'
+import { useAuth } from './AuthContext';
 
 export const ShopContext = createContext();
 
@@ -18,6 +19,7 @@ const ShopContextProvider = (props) => {
     const [token, setToken] = useState(localStorage.getItem('token') || '');
     const [isLoading, setIsLoading] = useState(false);
     const navigate = useNavigate();
+    const { user } = useAuth();
 
     // Configure axios defaults and interceptors
     useEffect(() => {
@@ -78,8 +80,9 @@ const ShopContextProvider = (props) => {
 
         try {
             setIsLoading(true);
-            await axios.post(backendUrl + '/api/cart/add', { itemId, size });
+            await axios.post(backendUrl + '/api/cart/add', { userId: user?._id, itemId, size });
             toast.success('Added to cart successfully');
+            await getUserCart(); // Refresh cart from backend
         } catch (error) {
             console.error('Error adding to cart:', error);
             toast.error(error.response?.data?.message || 'Failed to add to cart');
@@ -173,7 +176,7 @@ const ShopContextProvider = (props) => {
         
         try {
             setIsLoading(true);
-            const response = await axios.post(backendUrl + '/api/cart/get', {});
+            const response = await axios.post(backendUrl + '/api/cart/get', { userId: user?._id });
             if (response.data.success) {
                 setCartItems(response.data.cartData);
             }

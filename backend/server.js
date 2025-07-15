@@ -109,7 +109,8 @@ const allowedOrigins = [
     'https://www.jjtextiles.com',
     'https://jjtextiles.com',
     'http://localhost:5173',
-    'http://localhost:3000'
+    'http://localhost:3000',
+    'http://localhost:5174' // Added admin panel dev server port
 ];
 
 const corsOptions = {
