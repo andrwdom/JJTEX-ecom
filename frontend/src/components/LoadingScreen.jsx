@@ -50,7 +50,7 @@ const LoadingScreen = () => {
           >
             <motion.img
               src={assets.logo1}
-              alt="JJ TEX Logo"
+              alt="JJ Textiles Logo"
               className="w-48 mb-8"
               initial={{ y: 40, opacity: 0, scale: 0.7 }}
               animate={{ y: showLogo ? 0 : 40, opacity: showLogo ? 1 : 0, scale: showLogo ? 1 : 0.7 }}

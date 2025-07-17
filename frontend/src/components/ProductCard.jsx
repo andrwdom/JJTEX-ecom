@@ -143,7 +143,7 @@ const ProductCard = ({ product }) => {
                 {currency}{product.price}
               </p>
               {product.oldPrice && (
-                <p className="text-gray-400 text-sm line-through">
+                <p className="text-gray-600 text-sm line-through">
                   {currency}{product.oldPrice}
                 </p>
               )}

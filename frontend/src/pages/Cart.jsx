@@ -48,7 +48,7 @@ const Cart = () => {
               className="flex flex-col items-center justify-center py-20"
             >
               <img src={assets.empty_cart} alt="Empty Cart" className="w-40 mb-6" />
-              <p className="text-lg text-gray-500 mb-4">Your cart is empty</p>
+              <p className="text-lg text-gray-700 mb-4">Your cart is empty</p>
               <button
                 onClick={() => navigate('/collection')}
                 className="bg-pink-400 text-white px-6 py-2 rounded-full font-semibold hover:bg-pink-600 transition-colors"
@@ -99,7 +99,7 @@ const Cart = () => {
               </div>
               <button
                 onClick={() => updateQuantity(item._id, item.size, 0)}
-                className="ml-auto sm:ml-0 text-gray-400 hover:text-pink-500 transition-colors"
+                className="ml-auto sm:ml-0 text-gray-600 hover:text-pink-500 transition-colors"
                 title="Remove"
               >
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">

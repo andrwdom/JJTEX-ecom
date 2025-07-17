@@ -10,7 +10,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 // Share options component
 const ShareOptions = ({ product, onClose }) => {
   const shareUrl = window.location.href;
-  const shareText = `Check out ${product.name} on JJTEX!`;
+  const shareText = `Check out ${product.name} on JJ Textiles!`;
 
   const shareLinks = [
     {
@@ -239,7 +239,7 @@ const Product = () => {
     <div className="border-t-2 pt-4 sm:pt-10 transition-opacity ease-in duration-500 opacity-100 bg-white min-h-screen pb-20 sm:pb-0">
       {/* Back button for mobile */}
       <div className="sm:hidden px-4 mb-2 sticky top-0 bg-white z-20">
-        <button onClick={() => navigate(-1)} className="flex items-center gap-2 text-gray-500 hover:text-black py-2">
+        <button onClick={() => navigate(-1)} className="flex items-center gap-2 text-gray-600 hover:text-black py-2">
           <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
           </svg>
@@ -315,7 +315,7 @@ const Product = () => {
             {size && (
               <div className="mt-2 w-full max-w-xs flex flex-col gap-2 mb-6">
                 <div className="flex items-center justify-between mb-1">
-                  <span className="text-xs text-gray-500 font-medium">Stock left: <span className="font-semibold text-gray-700">{selectedStock}</span></span>
+                  <span className="text-xs text-gray-600 font-medium">Stock left: <span className="font-semibold text-gray-700">{selectedStock}</span></span>
                   {selectedStock <= 5 && (
                     <motion.span
                       initial={{ scale: 0.9, opacity: 0.7 }}
@@ -343,7 +343,7 @@ const Product = () => {
                     }}
                   />
                 </div>
-                <div className="flex justify-between text-xs text-gray-500">
+                <div className="flex justify-between text-xs text-gray-600">
                   <span>0</span>
                   <span>20+</span>
                 </div>

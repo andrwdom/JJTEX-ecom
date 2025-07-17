@@ -7,12 +7,12 @@ const TermsAndConditions = () => {
       <div className="text-2xl mb-8">
         <Title text1="TERMS" text2="AND CONDITIONS" />
       </div>
-      <div className="prose prose-lg max-w-none">
-        <p>
+      <div className="text-gray-800 leading-relaxed">
+        <p className="mb-4">
           By using this website, you agree to comply with and be bound by the following terms and conditions. Please review them carefully before using the website.
         </p>
-        <p>
-          The brand/business name is JJTEX. All prices are in ₹/Rs./INR. We reserve the right to update or modify these terms at any time without prior notice.
+        <p className="mb-4">
+          The brand/business name is JJ Textiles. All prices are in ₹/Rs./INR. We reserve the right to update or modify these terms at any time without prior notice.
         </p>
       </div>
     </div>

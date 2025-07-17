@@ -82,7 +82,7 @@ const Navbar = () => {
             {/* Center: Logo */}
             <div className="flex justify-center">
               <Link to="/" className="flex items-center gap-2">
-                <img src={assets.logo1} className='w-32' alt="JJTEX Logo" />
+                <img src={assets.logo1} className='w-32' alt="JJ Textiles Logo" />
               </Link>
             </div>
             {/* Right: Icons */}
@@ -131,7 +131,7 @@ const Navbar = () => {
                   <motion.img 
                     src={assets.logo1} 
                     className='w-32 drop-shadow-lg group-hover:scale-105 group-active:scale-95 transition-transform duration-200' 
-                    alt="JJTEX Logo"
+                    alt="JJ Textiles Logo"
                     whileHover={{ scale: 1.08 }}
                     whileTap={{ scale: 0.96 }}
                     style={{ willChange: 'transform' }}
@@ -246,7 +246,7 @@ const Navbar = () => {
                 >
                   <div className="flex items-center justify-between p-4 border-b bg-[#f3e5f5]">
                       <div className="flex items-center gap-2">
-                        <img src={assets.logo1} className="w-32" alt="JJTEX Logo" />
+                        <img src={assets.logo1} className="w-32" alt="JJ Textiles Logo" />
                       </div>
                       <button 
                         onClick={() => setIsMenuOpen(false)}

@@ -7,11 +7,11 @@ const ReturnPolicy = () => {
       <div className="text-2xl mb-8">
         <Title text1="RETURN" text2="POLICY" />
       </div>
-      <div className="prose prose-lg max-w-none">
-        <p>
+      <div className="text-gray-800 leading-relaxed">
+        <p className="mb-4">
           To apply for Return or Refund please contact us within 48 hours from the order delivery date.
         </p>
-        <p>
+        <p className="mb-4">
           Return Policy - The eligible Return/Replacement is processed in 3-4 business days, and the replacement will be delivered within 4 to 7 business days.
         </p>
       </div>

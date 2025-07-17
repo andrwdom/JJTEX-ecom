@@ -1,6 +1,6 @@
-# JJTEX FullStack Application
+# JJ Textiles FullStack Application
 
-A full-stack e-commerce application for JJTEX Textiles.
+A full-stack e-commerce application for JJ Textiles.
 
 ## Project Structure
 
@@ -21,8 +21,7 @@ A full-stack e-commerce application for JJTEX Textiles.
 
 ### Backend (.env)
 ```
-PORT=4000
-MONGODB_URI=your_mongodb_uri
+PORT=4000MONGODB_URI=your_mongodb_uri
 JWT_SECRET=your_secure_jwt_secret
 NODE_ENV=production
 CLOUDINARY_CLOUD_NAME=your_cloud_name

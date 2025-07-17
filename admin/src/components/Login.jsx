@@ -29,7 +29,7 @@ const Login = ({setToken}) => {
     <div className='min-h-screen flex items-center justify-center w-full bg-theme-50'>
         <div className='bg-white shadow-lg rounded-lg px-8 py-6 max-w-md w-full mx-4'>
             <div className="flex justify-center mb-6">
-                <img src={assets.logo1} alt="JJ TEX Logo" className="w-32" />
+                <img src={assets.logo1} alt="JJ Textiles Logo" className="w-32" />
             </div>
             <h1 className='text-2xl font-bold mb-6 text-theme-600 text-center'>Admin Panel</h1>
             <form onSubmit={onSubmitHandler} className="space-y-4">

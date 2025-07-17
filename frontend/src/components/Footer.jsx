@@ -7,9 +7,9 @@ const Footer = () => {
     <div>
       <div className='flex flex-col sm:grid grid-cols-[3fr_1fr_1fr] gap-14 my-10 mt-20 text-sm'>
         <div className='pl-10'>
-          <img src={assets.logo1} className='mb-2 w-32' alt="JJTEX Logo" />
+          <img src={assets.logo1} className='mb-2 w-32' alt="JJ Textiles Logo" />
           <p className='w-full md:w-2/3 text-gray-600'>
-            JJTEX brings you a wide range of elegant, everyday, and festive wear for women, men, and kids. From timeless sarees to modern styles, we blend tradition with comfort — now available online and in-store.
+            JJ Textiles brings you a wide range of elegant, everyday, and festive wear for women, men, and kids. From timeless sarees to modern styles, we blend tradition with comfort — now available online and in-stor
           </p>
         </div>
 
@@ -58,7 +58,7 @@ const Footer = () => {
 
       <div>
         <hr />
-        <p className='py-5 text-sm text-center'>Copyright © 2024 JJTEX - All Rights Reserved.</p>
+        <p className='py-5 text-sm text-center'>Copyright © 2024 JJ Textiles - All Rights Reserved.</p>
       </div>
     </div>
   )

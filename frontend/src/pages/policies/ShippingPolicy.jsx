@@ -7,8 +7,8 @@ const ShippingPolicy = () => {
       <div className="text-2xl mb-8">
         <Title text1="SHIPPING" text2="POLICY" />
       </div>
-      <div className="prose prose-lg max-w-none">
-        <p>
+      <div className="text-gray-800 leading-relaxed">
+        <p className="mb-4">
           Shipping Policy - All orders are processed within 24-48 hours of placement and are delivered within 4 to 7 business days.
         </p>
       </div>

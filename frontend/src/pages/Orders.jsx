@@ -216,7 +216,7 @@ const Orders = () => {
               </button>
             </>
           ) : (
-            <div className='text-gray-500'>Loading user info...</div>
+            <div className='text-gray-600'>Loading user info...</div>
           )}
         </div>
         <div className='text-2xl mb-8'>
@@ -225,7 +225,7 @@ const Orders = () => {
         {orderData.length === 0 ? (
           <div className='text-center py-8'>
             <p className='text-gray-600 mb-4'>No orders found.</p>
-            <p className='text-sm text-gray-500'>
+            <p className='text-sm text-gray-600'>
               Need help? Contact our support:
               <a href="tel:+919791983410" className='text-blue-600 hover:text-blue-800 ml-2'>
                 +91 97919 83410
@@ -250,14 +250,14 @@ const Orders = () => {
                         <p>Quantity: {item.quantity}</p>
                         <p>Size: {item.size}</p>
                       </div>
-                      <p className='text-sm text-gray-500'>
+                      <p className='text-sm text-gray-600'>
                         Ordered on: {new Date(item.date).toLocaleDateString('en-US', {
                           year: 'numeric',
                           month: 'long',
                           day: 'numeric'
                         })}
                       </p>
-                      <p className='text-sm text-gray-500'>
+                      <p className='text-sm text-gray-600'>
                         Payment Method: <span className='capitalize'>{item.paymentMethod}</span>
                         <span className={`ml-2 px-2 py-0.5 rounded-full text-xs ${item.payment ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}`}>
                           {item.payment ? 'Paid' : 'Pending'}
@@ -275,7 +275,7 @@ const Orders = () => {
                           disabled={cancellingOrderId === item.orderId}
                           className={`text-sm px-4 py-2 rounded-lg transition-colors ${
                             cancellingOrderId === item.orderId
-                              ? 'bg-gray-100 text-gray-500 cursor-not-allowed'
+                              ? 'bg-gray-100 text-gray-600 cursor-not-allowed'
                               : 'bg-red-100 text-red-600 hover:bg-red-200'
                           }`}
                         >
@@ -325,7 +325,7 @@ const Orders = () => {
                   support@jjtex.com
                 </a>
               </div>
-              <div className='text-sm text-gray-500 mb-6'>
+              <div className='text-sm text-gray-600 mb-6'>
                 <p>Our support team is available:</p>
                 <p>Monday to Saturday: 9:00 AM - 6:00 PM</p>
               </div>

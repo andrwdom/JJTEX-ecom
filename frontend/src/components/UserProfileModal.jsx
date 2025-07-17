@@ -72,7 +72,7 @@ const UserProfileModal = ({ isOpen, onClose }) => {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30">
       <div className="bg-white rounded-xl shadow-lg w-full max-w-lg p-6 relative animate-fade-in">
-        <button onClick={onClose} className="absolute top-3 right-3 text-gray-400 hover:text-gray-700 text-xl">&times;</button>
+        <button onClick={onClose} className="absolute top-3 right-3 text-gray-600 hover:text-gray-700 text-xl">&times;</button>
         <h2 className="text-2xl font-bold mb-4">My Profile</h2>
         {user ? (
           <div className="mb-6">
@@ -125,12 +125,12 @@ const UserProfileModal = ({ isOpen, onClose }) => {
             )}
           </div>
         ) : (
-          <div className="mb-6 text-gray-500">Loading user info...</div>
+          <div className="mb-6 text-gray-600">Loading user info...</div>
         )}
         <h3 className="text-lg font-semibold mb-2">Order History</h3>
         <div className="max-h-48 overflow-y-auto mb-2">
           {orders.length === 0 ? (
-            <div className="text-gray-400 text-sm">No orders found.</div>
+            <div className="text-gray-600 text-sm">No orders found.</div>
           ) : (
             <ul className="divide-y divide-gray-100">
               {orders.map((order, idx) => (
@@ -138,7 +138,7 @@ const UserProfileModal = ({ isOpen, onClose }) => {
                   <div className="flex justify-between items-center">
                     <div>
                       <span className="font-medium text-gray-700">Order #{order._id?.slice(-6) || idx + 1}</span>
-                      <span className="ml-2 text-xs text-gray-500">{new Date(order.date).toLocaleDateString()}</span>
+                      <span className="ml-2 text-xs text-gray-600">{new Date(order.date).toLocaleDateString()}</span>
                     </div>
                     <button
                       className="text-xs text-pink-600 hover:underline"
@@ -147,7 +147,7 @@ const UserProfileModal = ({ isOpen, onClose }) => {
                       View Details
                     </button>
                   </div>
-                  <div className="text-xs text-gray-500 mt-1">
+                  <div className="text-xs text-gray-600 mt-1">
                     {order.items?.map((item, i) => (
                       <span key={i}>{item.name} x {item.quantity}{i < order.items.length - 1 ? ', ' : ''}</span>
                     ))}

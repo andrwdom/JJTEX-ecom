@@ -14,10 +14,10 @@ const Contact = () => {
       <div className='my-10 flex flex-col justify-center md:flex-row gap-10 mb-28'>
         <img className='w-full md:max-w-[480px] rounded-xl' src={assets.contact_img} alt="" />
         <div className='flex flex-col justify-center items-start gap-6'>
-          <p className='font-semibold text-xl text-gray-600'>JJ TEXTILES</p>
-          <p className='text-gray-500'>No:166A , Anjaneyar Kovil street, Vengaivasal, Chennai-600126, Tamilnadu </p>
-          <p className='text-gray-500'>Tel: 9940181523 <br /> Email: jjtex@gmail.com</p>
-          <p className='text-gray-500'>Hours: Monday - Saturday, 10:00 AM - 8:00 PM</p>
+          <p className='font-semibold text-xl text-gray-600'>JJ Textiles</p>
+          <p className='text-gray-700'>No:166A , Anjaneyar Kovil street, Vengaivasal, Chennai-600126, Tamilnadu </p>
+          <p className='text-gray-700'>Tel: 9940181523 <br /> Email: jjtex@gmail.com</p>
+          <p className='text-gray-700'>Hours: Monday - Saturday, 10:00 AM - 8:00 PM</p>
         </div>
       </div>
 
