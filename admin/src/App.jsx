@@ -15,7 +15,7 @@ import CarouselManagement from './pages/CarouselManagement';
 import ProtectedRoute from './components/ProtectedRoute';
 import WithClickSpark from './components/WithClickSpark';
 
-export const backendUrl = import.meta.env.VITE_BACKEND_URL
+export const backendUrl = import.meta.env.VITE_API_URL
 export const currency = '₹'
 
 const App = () => {
