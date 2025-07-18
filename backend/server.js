@@ -232,3 +232,5 @@ process.on('SIGTERM', () => {
         process.exit(0);
     });
 });
+
+console.log('CLOUDINARY_API_SECRET:', process.env.CLOUDINARY_API_SECRET);
