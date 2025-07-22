@@ -116,7 +116,7 @@ const ShareOptions = ({ product, onClose }) => {
         {navigator.share && (
           <button
             onClick={handleShare}
-            className="w-full mt-4 bg-pink-500 text-white rounded-full py-2 font-medium hover:bg-pink-600 transition-colors"
+            className="w-full mt-4 bg-primary-500 text-white rounded-full py-2 font-medium hover:bg-primary-600 transition-colors"
           >
             Share via...
           </button>
@@ -279,7 +279,7 @@ const Product = () => {
                   key={idx}
                   src={img}
                   alt={productData.name}
-                  className={`w-16 h-16 object-cover rounded-lg cursor-pointer border-2 transition-all duration-200 snap-center ${img === image ? 'border-pink-500 scale-105' : 'border-gray-200'}`}
+                  className={`w-16 h-16 object-cover rounded-lg cursor-pointer border-2 transition-all duration-200 snap-center ${img === image ? 'border-primary-500 scale-105' : 'border-gray-200'}`}
                   onClick={() => setImage(img)}
                 />
               ))}
@@ -294,9 +294,9 @@ const Product = () => {
           transition={{ duration: 0.4 }}
           className="flex-1 flex flex-col gap-4 sm:gap-6 mt-4 sm:mt-0"
         >
-          <h1 className="text-2xl sm:text-3xl font-bold leading-tight mb-1">{productData.name}</h1>
+          <h1 className="text-2xl sm:text-3xl font-bold leading-tight mb-1 text-gray-900">{productData.name}</h1>
           <p className="text-gray-600 text-base sm:text-lg mb-2">{productData.description}</p>
-          <div className="text-3xl font-semibold text-pink-500 mb-2">{currency}{productData.price}</div>
+          <div className="text-3xl font-semibold text-primary-500 mb-2">{currency}{productData.price}</div>
 
           {/* Size Selector */}
           <div className="flex flex-col gap-2 my-2">
@@ -305,7 +305,7 @@ const Product = () => {
               {productData.sizes.map((item, index) => (
                 <button
                   onClick={() => handleSizeSelection(item)}
-                  className={`rounded-full border py-2 px-5 text-sm font-semibold transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-pink-400 ${item.size === size ? 'bg-pink-100 border-pink-500 text-pink-600 shadow' : 'bg-gray-100 border-gray-200 text-gray-700'}`}
+                  className={`rounded-full border py-2 px-5 text-sm font-semibold transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-primary-400 ${item.size === size ? 'bg-primary-100 border-primary-500 text-primary-600 shadow' : 'bg-gray-100 border-gray-200 text-gray-700'}`}
                   key={index}
                 >
                   {item.size}
@@ -321,7 +321,7 @@ const Product = () => {
                       initial={{ scale: 0.9, opacity: 0.7 }}
                       animate={{ scale: [0.9, 1.1, 0.9], opacity: [0.7, 1, 0.7] }}
                       transition={{ repeat: Infinity, duration: 1.2 }}
-                      className="ml-2 px-2 py-0.5 rounded-full bg-pink-100 text-pink-600 text-xs font-semibold shadow-sm"
+                      className="ml-2 px-2 py-0.5 rounded-full bg-primary-100 text-primary-600 text-xs font-semibold shadow-sm"
                     >
                       Only a few left!
                     </motion.span>
@@ -364,7 +364,7 @@ const Product = () => {
           <div className="hidden sm:flex gap-4 mt-2">
             <button 
               onClick={handleAddToCart} 
-              className="bg-pink-400 rounded-full text-white px-8 py-3 text-sm font-semibold hover:bg-pink-600 transition-colors"
+              className="bg-primary-400 rounded-full text-white px-8 py-3 text-sm font-semibold hover:bg-primary-600 transition-colors"
             >
               ADD TO CART
             </button>
@@ -390,7 +390,7 @@ const Product = () => {
           >
             <button 
               onClick={handleAddToCart} 
-              className="flex-1 bg-pink-400 rounded-full text-white py-3 text-base font-semibold hover:bg-pink-600 transition-colors"
+              className="flex-1 bg-primary-400 rounded-full text-white py-3 text-base font-semibold hover:bg-primary-600 transition-colors"
             >
               Add to Cart
             </button>
