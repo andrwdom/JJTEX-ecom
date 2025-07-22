@@ -1,5 +1,5 @@
 import express from 'express'
-import {placeOrder, placeOrderStripe, placeOrderRazorpay, placeOrderPhonePe, allOrders, userOrders, updateStatus, verifyStripe, verifyRazorpay, verifyPhonePe, processCardPayment, cancelOrder} from '../controllers/orderController.js'
+import {placeOrder, placeOrderStripe, placeOrderRazorpay, placeOrderPhonePe, allOrders, userOrders, updateStatus, verifyStripe, verifyRazorpay, verifyPhonePe, processCardPayment, cancelOrder, checkPhonePeStatus, refundPhonePe} from '../controllers/orderController.js'
 import adminAuth  from '../middleware/adminAuth.js'
 import { verifyToken } from '../middleware/auth.js'
 
@@ -18,6 +18,11 @@ orderRouter.post('/place-phonepe',verifyToken,placeOrderPhonePe)
 orderRouter.post('/verify-stripe',verifyToken,verifyStripe)
 orderRouter.post('/verify-razorpay',verifyToken,verifyRazorpay)
 orderRouter.post('/verify-phonepe',verifyPhonePe)
+orderRouter.get('/status-phonepe/:transactionId', checkPhonePeStatus)
+orderRouter.post('/refund-callback-phonepe', (req, res) => {
+    console.log("PhonePe Refund Callback:", req.body);
+    res.status(200).send();
+});
 orderRouter.post('/process-card',verifyToken,processCardPayment)
 orderRouter.post('/cancel',verifyToken,cancelOrder)
 

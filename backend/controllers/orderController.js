@@ -153,68 +153,72 @@ const placeOrderPhonePe = async (req, res) => {
 
         const newOrder = new orderModel(orderData);
         await newOrder.save();
-        await userModel.findByIdAndUpdate(userId, { cartData: {} });
 
-        const merchantTransactionId = newOrder._id;
-        const user = await userModel.findById(userId);
-
+        const merchantTransactionId = newOrder._id.toString();
+        
         const payload = {
             merchantId: PHONEPE_MERCHANT_ID,
             merchantTransactionId: merchantTransactionId,
             merchantUserId: userId,
-            amount: amount * 100,
-            redirectUrl: `${origin}/verify?success=true&orderId=${newOrder._id}`,
+            amount: amount * 100, // Amount in paise
+            redirectUrl: `${origin}/verify?success=true&orderId=${merchantTransactionId}`,
             redirectMode: "REDIRECT",
             callbackUrl: `${process.env.BACKEND_URL}/api/order/verify-phonepe`,
-            mobileNumber: user.phone || '9999999999',
+            mobileNumber: address.phone || '9999999999',
             paymentInstrument: {
                 type: "PAY_PAGE"
             }
         };
 
-        const dataToHash = Buffer.from(JSON.stringify(payload)).toString('base64') + '/pg/v1/pay' + PHONEPE_SALT_KEY;
-        const sha256_val = sha256(dataToHash);
-        const x_verify = sha256_val + '###1';
+        const base64Payload = Buffer.from(JSON.stringify(payload)).toString('base64');
+        const checksum = sha256(base64Payload + '/pg/v1/pay' + PHONEPE_SALT_KEY) + '###1';
 
-        const response = await axios.post('https://api.phonepe.com/apis/hermes/pg/v1/pay', { request: Buffer.from(JSON.stringify(payload)).toString('base64') }, {
+        const response = await axios.post('https://api-preprod.phonepe.com/apis/pg-sandbox/pg/v1/pay', { request: base64Payload }, {
             headers: {
                 'Content-Type': 'application/json',
-                'X-VERIFY': x_verify,
+                'X-VERIFY': checksum,
+                'accept': 'application/json'
             }
         });
 
         res.json({ success: true, session_url: response.data.data.instrumentResponse.redirectInfo.url });
 
     } catch (error) {
-        console.log(error);
+        console.error("PhonePe Error:", error.response ? error.response.data : error.message);
         res.json({ success: false, message: error.message });
     }
-}
+};
+
 
 const verifyPhonePe = async (req, res) => {
     try {
-        const { code, merchantId, transactionId } = req.body;
         const x_verify = req.headers['x-verify'];
+        const responsePayload = req.body.response;
 
-        if (code === 'PAYMENT_SUCCESS' && merchantId && transactionId && x_verify) {
-            const dataToHash = `/pg/v1/status/${merchantId}/${transactionId}` + PHONEPE_SALT_KEY;
-            const sha256_val = sha256(dataToHash);
-            const calculated_x_verify = sha256_val + '###1';
+        if (!responsePayload || !x_verify) {
+            return res.status(400).send({ success: false, message: "Invalid callback" });
+        }
 
-            if (x_verify === calculated_x_verify) {
-                const order = await orderModel.findById(transactionId);
-                if (order) {
-                    await orderModel.findByIdAndUpdate(transactionId, { payment: true });
-                    res.status(200).send();
-                } else {
-                    res.status(404).send();
-                }
-            } else {
-                res.status(400).send();
-            }
-        } else {
-            const order = await orderModel.findById(transactionId);
+        const decodedResponse = JSON.parse(Buffer.from(responsePayload, 'base64').toString('utf8'));
+        const { merchantId, merchantTransactionId, state } = decodedResponse;
+        
+        const saltKey = PHONEPE_SALT_KEY;
+        const saltIndex = 1;
+
+        const calculated_x_verify = sha256(responsePayload + saltKey) + '###' + saltIndex;
+        
+        if (x_verify !== calculated_x_verify) {
+            console.error("PhonePe webhook verification failed: Checksum mismatch");
+            return res.status(401).send({ success: false, message: "Webhook verification failed" });
+        }
+        
+        if (state === 'COMPLETED') {
+            await orderModel.findByIdAndUpdate(merchantTransactionId, { payment: true });
+            console.log(`Order ${merchantTransactionId} payment confirmed via PhonePe webhook.`);
+        } else if (state === 'FAILED') {
+            const order = await orderModel.findById(merchantTransactionId);
             if (order) {
+                // Restore stock for failed payment
                 for (const item of order.items) {
                     const product = await productModel.findById(item._id);
                     if (product) {
@@ -225,13 +229,96 @@ const verifyPhonePe = async (req, res) => {
                         }
                     }
                 }
-                await orderModel.findByIdAndDelete(transactionId);
+                await orderModel.findByIdAndDelete(merchantTransactionId);
+                console.log(`Order ${merchantTransactionId} failed. Stock restored.`);
             }
-            res.status(400).send();
         }
+        // For PENDING status, we do nothing in the webhook and rely on the cron job for reconciliation.
+        
+        return res.status(200).send({ success: true });
+
     } catch (error) {
-        console.log(error);
-        res.status(500).send();
+        console.error('PhonePe verification error:', error);
+        return res.status(500).send({ success: false, message: 'Internal server error' });
+    }
+};
+
+const checkPhonePeStatus = async (req, res) => {
+    const merchantTransactionId = req.params.transactionId;
+    const merchantId = PHONEPE_MERCHANT_ID;
+
+    const keyIndex = 1;
+    const string = `/pg/v1/status/${merchantId}/${merchantTransactionId}` + PHONEPE_SALT_KEY;
+    const sha256_val = sha256(string);
+    const x_verify = sha256_val + '###' + keyIndex;
+
+    try {
+        const response = await axios.get(`https://api-preprod.phonepe.com/apis/pg-sandbox/pg/v1/status/${merchantId}/${merchantTransactionId}`, {
+            headers: {
+                'Content-Type': 'application/json',
+                'X-VERIFY': x_verify,
+                'X-MERCHANT-ID': merchantId
+            }
+        });
+
+        if (response.data.success) {
+            const order = await orderModel.findById(merchantTransactionId);
+            if (response.data.code === 'PAYMENT_SUCCESS' && order.payment === false) {
+                await orderModel.findByIdAndUpdate(merchantTransactionId, { payment: true });
+                console.log(`Order ${merchantTransactionId} payment confirmed via status check.`);
+            } else if (response.data.code === 'PAYMENT_ERROR' && order.payment === false) {
+                for (const item of order.items) {
+                    const product = await productModel.findById(item._id);
+                    if (product) {
+                        const sizeIndex = product.sizes.findIndex(s => s.size === item.size);
+                        if (sizeIndex !== -1) {
+                            product.sizes[sizeIndex].stock += item.quantity;
+                            await product.save();
+                        }
+                    }
+                }
+                await orderModel.findByIdAndDelete(merchantTransactionId);
+                console.log(`Order ${merchantTransactionId} failed. Stock restored via status check.`);
+            }
+        }
+        res.json(response.data);
+    } catch (error) {
+        console.error("PhonePe Status Check Error:", error.response ? error.response.data : error.message);
+        res.status(500).json({ success: false, message: error.message });
+    }
+};
+
+const refundPhonePe = async (orderId, amount) => {
+    const merchantTransactionId = `refund_${Date.now()}`;
+    const merchantId = PHONEPE_MERCHANT_ID;
+    const originalTransactionId = orderId;
+    const merchantUserId = "MUID123"; // You may want to fetch the actual user ID
+
+    const payload = {
+        merchantId: merchantId,
+        merchantUserId: merchantUserId,
+        originalTransactionId: originalTransactionId,
+        merchantTransactionId: merchantTransactionId,
+        amount: amount * 100, // Amount in paise
+        callbackUrl: `${process.env.BACKEND_URL}/api/order/refund-callback-phonepe`
+    };
+
+    const base64Payload = Buffer.from(JSON.stringify(payload)).toString('base64');
+    const checksum = sha256(base64Payload + '/pg/v1/refund' + PHONEPE_SALT_KEY) + '###1';
+
+    try {
+        const response = await axios.post('https://api-preprod.phonepe.com/apis/pg-sandbox/pg/v1/refund', { request: base64Payload }, {
+            headers: {
+                'Content-Type': 'application/json',
+                'X-VERIFY': checksum,
+                'accept': 'application/json'
+            }
+        });
+        console.log("PhonePe Refund Response:", response.data);
+        return response.data;
+    } catch (error) {
+        console.error("PhonePe Refund Error:", error.response ? error.response.data : error.message);
+        return { success: false, message: error.message };
     }
 };
 
@@ -559,9 +646,12 @@ const cancelOrder = async (req, res) => {
 
         // If order was paid, handle refund logic here
         if (order.payment) {
-            // TODO: Implement refund logic based on payment method
-            // For now, just log it
-            console.log(`Paid order cancelled: ${orderId}. Refund should be processed.`);
+            if (order.paymentMethod === 'PhonePe') {
+                await refundPhonePe(order._id, order.amount);
+            } else {
+                // TODO: Implement refund logic for other payment methods
+                console.log(`Paid order cancelled: ${orderId}. Refund should be processed.`);
+            }
         }
 
         // Restore product stock
@@ -642,4 +732,4 @@ const getAllOrders = async (req, res) => {
     }
 };
 
-export {verifyRazorpay, verifyStripe, verifyPhonePe, placeOrder, placeOrderStripe, placeOrderRazorpay, placeOrderPhonePe, processCardPayment, allOrders, userOrders, updateStatus, cancelOrder, getUserOrders, getAllOrders}
+export {verifyRazorpay, verifyStripe, verifyPhonePe, placeOrder, placeOrderStripe, placeOrderRazorpay, placeOrderPhonePe, processCardPayment, allOrders, userOrders, updateStatus, cancelOrder, getUserOrders, getAllOrders, checkPhonePeStatus, refundPhonePe}
