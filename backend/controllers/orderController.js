@@ -1,22 +1,12 @@
 import orderModel from "../models/orderModel.js";
 import userModel from "../models/userModel.js";
 import productModel from "../models/productModel.js";
-import Stripe from 'stripe'
-import razorpay from 'razorpay'
 import sha256 from "sha256";
 import axios from "axios";
 
 // global variables
 const currency = 'inr'
 const deliveryCharge = 10
-
-// gateway initialize
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY)
-
-const razorpayInstance = new razorpay({
-    key_id : process.env.RAZORPAY_KEY_ID,
-    key_secret : process.env.RAZORPAY_KEY_SECRET,
-})
 
 const PHONEPE_MERCHANT_ID = process.env.PHONEPE_MERCHANT_ID;
 const PHONEPE_SALT_KEY = process.env.PHONEPE_SALT_KEY;
@@ -68,65 +58,6 @@ const placeOrder = async (req,res) => {
         await userModel.findByIdAndUpdate(userId,{cartData:{}})
 
         res.json({success:true,message:"Order Placed"})
-
-    } catch (error) {
-        console.log(error)
-        res.json({success:false,message:error.message})
-    }
-}
-
-// Placing orders using Stripe Method
-const placeOrderStripe = async (req,res) => {
-    try {
-        const { userId, items, amount, address} = req.body
-        const { origin } = req.headers;
-
-        // Update product stock
-        await updateProductStock(items);
-
-        const orderData = {
-            userId,
-            items,
-            address,
-            amount,
-            paymentMethod:"Stripe",
-            payment:false,
-            date: Date.now()
-        }
-
-        const newOrder = new orderModel(orderData)
-        await newOrder.save()
-
-        const line_items = items.map((item) => ({
-            price_data: {
-                currency:currency,
-                product_data: {
-                    name:item.name
-                },
-                unit_amount: item.price * 100
-            },
-            quantity: item.quantity
-        }))
-
-        line_items.push({
-            price_data: {
-                currency:currency,
-                product_data: {
-                    name:'Delivery Charges'
-                },
-                unit_amount: deliveryCharge * 100
-            },
-            quantity: 1
-        })
-
-        const session = await stripe.checkout.sessions.create({
-            success_url: `${origin}/verify?success=true&orderId=${newOrder._id}`,
-            cancel_url:  `${origin}/verify?success=false&orderId=${newOrder._id}`,
-            line_items,
-            mode: 'payment',
-        })
-
-        res.json({success:true,session_url:session.url});
 
     } catch (error) {
         console.log(error)
@@ -430,60 +361,6 @@ const verifyRazorpay = async (req,res) => {
         res.json({success:false,message:error.message})
     }
 }
-
-// Direct Credit Card Payment using Stripe
-const processCardPayment = async (req, res) => {
-    try {
-        const { userId, items, amount, address, paymentMethodId } = req.body;
-
-        // Update product stock
-        await updateProductStock(items);
-
-        // Create a payment intent
-        const paymentIntent = await stripe.paymentIntents.create({
-            amount: amount * 100, // Convert to cents
-            currency: currency,
-            payment_method: paymentMethodId,
-            confirm: true,
-            return_url: `${req.headers.origin}/orders`,
-        });
-
-        if (paymentIntent.status === 'succeeded') {
-            // Create order
-            const orderData = {
-                userId,
-                items,
-                address,
-                amount,
-                paymentMethod: "Credit Card",
-                payment: true,
-                date: Date.now()
-            };
-
-            const newOrder = new orderModel(orderData);
-            await newOrder.save();
-            await userModel.findByIdAndUpdate(userId, { cartData: {} });
-
-            res.json({ success: true, message: "Payment successful" });
-        } else {
-            // If payment failed, restore stock
-            for (const item of items) {
-                const product = await productModel.findById(item._id);
-                if (product) {
-                    const sizeIndex = product.sizes.findIndex(s => s.size === item.size);
-                    if (sizeIndex !== -1) {
-                        product.sizes[sizeIndex].stock += item.quantity;
-                        await product.save();
-                    }
-                }
-            }
-            res.json({ success: false, message: "Payment failed" });
-        }
-    } catch (error) {
-        console.log(error);
-        res.json({ success: false, message: error.message });
-    }
-};
 
 // All Orders data for Admin Panel
 const allOrders = async (req,res) => {

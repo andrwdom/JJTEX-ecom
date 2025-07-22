@@ -48,33 +48,6 @@ const PlaceOrder = () => {
         setFormData(data => ({ ...data, [name]: value }))
     }
 
-    const initPay = (order) => {
-        const options = {
-            key: import.meta.env.VITE_RAZORPAY_KEY_ID,
-            amount: order.amount,
-            currency: order.currency,
-            name: 'Order Payment',
-            description: 'Order Payment',
-            order_id: order.id,
-            receipt: order.receipt,
-            handler: async (response) => {
-                try {
-                    const { data } = await axios.post(backendUrl + '/api/order/verifyRazorpay', response, { headers: { token } })
-                    if (data.success) {
-                        navigate('/orders')
-                        setCartItems({})
-                        toast.success('Payment successful!')
-                    }
-                } catch (error) {
-                    console.log(error)
-                    toast.error(error.message || 'Payment verification failed')
-                }
-            }
-        }
-        const rzp = new window.Razorpay(options)
-        rzp.open()
-    }
-
     const onSubmitHandler = async (event) => {
         event.preventDefault()
 
@@ -128,19 +101,6 @@ const PlaceOrder = () => {
                 } catch (error) {
                     console.log(error)
                     toast.error(error.response?.data?.message || 'Failed to place order')
-                }
-            }
-            else if (method === 'razorpay') {
-                try {
-                    const responseRazorpay = await axios.post(backendUrl + '/api/order/razorpay', orderData, { headers: { token } })
-                    if (responseRazorpay.data.success) {
-                        initPay(responseRazorpay.data.order)
-                    } else {
-                        toast.error(responseRazorpay.data.message || 'Failed to initialize payment')
-                    }
-                } catch (error) {
-                    console.log(error)
-                    toast.error(error.response?.data?.message || 'Failed to initialize payment')
                 }
             }
             else if (method === 'phonepe') {
@@ -240,11 +200,6 @@ const PlaceOrder = () => {
                                     <img src={assets['cash-on-delivery']} className="w-12 h-12 object-contain" alt="Cash on Delivery" />
                                     <span className="text-gray-900 font-medium">Cash on Delivery</span>
                             </div>
-                                <div onClick={() => setMethod('razorpay')} className={`flex gap-4 items-center border p-4 rounded-lg cursor-pointer transition-all duration-200 ${method === 'razorpay' ? 'border-[#ff69b4] bg-pink-50' : 'border-gray-200 hover:border-gray-300'}`}>
-                                    <input type="radio" checked={method === 'razorpay'} onChange={() => setMethod('razorpay')} className="text-pink-500 focus:ring-pink-500" />
-                                    <img src={assets.razorpay_logo} className="w-24 h-8 object-contain" alt="Razorpay" />
-                                    <span className="text-gray-900 font-medium">Razorpay</span>
-                                </div>
                                 <div onClick={() => setMethod('phonepe')} className={`flex gap-4 items-center border p-4 rounded-lg cursor-pointer transition-all duration-200 ${method === 'phonepe' ? 'border-[#ff69b4] bg-pink-50' : 'border-gray-200 hover:border-gray-300'}`}>
                                     <input type="radio" checked={method === 'phonepe'} onChange={() => setMethod('phonepe')} className="text-pink-500 focus:ring-pink-500" />
                                     <img src={assets.phonepe_logo} className="w-24 h-8 object-contain" alt="PhonePe" />
