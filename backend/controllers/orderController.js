@@ -3,6 +3,8 @@ import userModel from "../models/userModel.js";
 import productModel from "../models/productModel.js";
 import Stripe from 'stripe'
 import razorpay from 'razorpay'
+import sha256 from "sha256";
+import axios from "axios";
 
 // global variables
 const currency = 'inr'
@@ -15,6 +17,9 @@ const razorpayInstance = new razorpay({
     key_id : process.env.RAZORPAY_KEY_ID,
     key_secret : process.env.RAZORPAY_KEY_SECRET,
 })
+
+const PHONEPE_MERCHANT_ID = process.env.PHONEPE_MERCHANT_ID;
+const PHONEPE_SALT_KEY = process.env.PHONEPE_SALT_KEY;
 
 async function updateProductStock(items) {
     for (const item of items) {
@@ -128,6 +133,107 @@ const placeOrderStripe = async (req,res) => {
         res.json({success:false,message:error.message})
     }
 }
+
+const placeOrderPhonePe = async (req, res) => {
+    try {
+        const { userId, items, amount, address } = req.body;
+        const { origin } = req.headers;
+
+        await updateProductStock(items);
+
+        const orderData = {
+            userId,
+            items,
+            address,
+            amount,
+            paymentMethod: "PhonePe",
+            payment: false,
+            date: Date.now()
+        };
+
+        const newOrder = new orderModel(orderData);
+        await newOrder.save();
+        await userModel.findByIdAndUpdate(userId, { cartData: {} });
+
+        const merchantTransactionId = newOrder._id;
+        const user = await userModel.findById(userId);
+
+        const payload = {
+            merchantId: PHONEPE_MERCHANT_ID,
+            merchantTransactionId: merchantTransactionId,
+            merchantUserId: userId,
+            amount: amount * 100,
+            redirectUrl: `${origin}/verify?success=true&orderId=${newOrder._id}`,
+            redirectMode: "REDIRECT",
+            callbackUrl: `${process.env.BACKEND_URL}/api/order/verify-phonepe`,
+            mobileNumber: user.phone || '9999999999',
+            paymentInstrument: {
+                type: "PAY_PAGE"
+            }
+        };
+
+        const dataToHash = Buffer.from(JSON.stringify(payload)).toString('base64') + '/pg/v1/pay' + PHONEPE_SALT_KEY;
+        const sha256_val = sha256(dataToHash);
+        const x_verify = sha256_val + '###1';
+
+        const response = await axios.post('https://api.phonepe.com/apis/hermes/pg/v1/pay', { request: Buffer.from(JSON.stringify(payload)).toString('base64') }, {
+            headers: {
+                'Content-Type': 'application/json',
+                'X-VERIFY': x_verify,
+            }
+        });
+
+        res.json({ success: true, session_url: response.data.data.instrumentResponse.redirectInfo.url });
+
+    } catch (error) {
+        console.log(error);
+        res.json({ success: false, message: error.message });
+    }
+}
+
+const verifyPhonePe = async (req, res) => {
+    try {
+        const { code, merchantId, transactionId } = req.body;
+        const x_verify = req.headers['x-verify'];
+
+        if (code === 'PAYMENT_SUCCESS' && merchantId && transactionId && x_verify) {
+            const dataToHash = `/pg/v1/status/${merchantId}/${transactionId}` + PHONEPE_SALT_KEY;
+            const sha256_val = sha256(dataToHash);
+            const calculated_x_verify = sha256_val + '###1';
+
+            if (x_verify === calculated_x_verify) {
+                const order = await orderModel.findById(transactionId);
+                if (order) {
+                    await orderModel.findByIdAndUpdate(transactionId, { payment: true });
+                    res.status(200).send();
+                } else {
+                    res.status(404).send();
+                }
+            } else {
+                res.status(400).send();
+            }
+        } else {
+            const order = await orderModel.findById(transactionId);
+            if (order) {
+                for (const item of order.items) {
+                    const product = await productModel.findById(item._id);
+                    if (product) {
+                        const sizeIndex = product.sizes.findIndex(s => s.size === item.size);
+                        if (sizeIndex !== -1) {
+                            product.sizes[sizeIndex].stock += item.quantity;
+                            await product.save();
+                        }
+                    }
+                }
+                await orderModel.findByIdAndDelete(transactionId);
+            }
+            res.status(400).send();
+        }
+    } catch (error) {
+        console.log(error);
+        res.status(500).send();
+    }
+};
 
 // Verify Stripe 
 const verifyStripe = async (req,res) => {
@@ -536,4 +642,4 @@ const getAllOrders = async (req, res) => {
     }
 };
 
-export {verifyRazorpay, verifyStripe, placeOrder, placeOrderStripe, placeOrderRazorpay, processCardPayment, allOrders, userOrders, updateStatus, cancelOrder, getUserOrders, getAllOrders}
+export {verifyRazorpay, verifyStripe, verifyPhonePe, placeOrder, placeOrderStripe, placeOrderRazorpay, placeOrderPhonePe, processCardPayment, allOrders, userOrders, updateStatus, cancelOrder, getUserOrders, getAllOrders}

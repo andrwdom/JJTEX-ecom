@@ -143,6 +143,19 @@ const PlaceOrder = () => {
                     toast.error(error.response?.data?.message || 'Failed to initialize payment')
                 }
             }
+            else if (method === 'phonepe') {
+                try {
+                    const responsePhonePe = await axios.post(backendUrl + '/api/order/place-phonepe', orderData, { headers: { token } })
+                    if (responsePhonePe.data.success) {
+                        window.location.href = responsePhonePe.data.session_url;
+                    } else {
+                        toast.error(responsePhonePe.data.message || 'Failed to initialize payment')
+                    }
+                } catch (error) {
+                    console.log(error)
+                    toast.error(error.response?.data?.message || 'Failed to initialize payment')
+                }
+            }
 
         } catch (error) {
             console.log(error)
@@ -231,6 +244,11 @@ const PlaceOrder = () => {
                                     <input type="radio" checked={method === 'razorpay'} onChange={() => setMethod('razorpay')} className="text-pink-500 focus:ring-pink-500" />
                                     <img src={assets.razorpay_logo} className="w-24 h-8 object-contain" alt="Razorpay" />
                                     <span className="text-gray-900 font-medium">Razorpay</span>
+                                </div>
+                                <div onClick={() => setMethod('phonepe')} className={`flex gap-4 items-center border p-4 rounded-lg cursor-pointer transition-all duration-200 ${method === 'phonepe' ? 'border-[#ff69b4] bg-pink-50' : 'border-gray-200 hover:border-gray-300'}`}>
+                                    <input type="radio" checked={method === 'phonepe'} onChange={() => setMethod('phonepe')} className="text-pink-500 focus:ring-pink-500" />
+                                    <img src={assets.phonepe_logo} className="w-24 h-8 object-contain" alt="PhonePe" />
+                                    <span className="text-gray-900 font-medium">PhonePe</span>
                                 </div>
                             </div>
                         </div>
