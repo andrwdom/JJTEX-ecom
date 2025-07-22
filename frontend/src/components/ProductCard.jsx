@@ -135,15 +135,15 @@ const ProductCard = ({ product }) => {
           
           {/* Product Info */}
           <div className="px-2">
-            <h3 className="text-gray-800 font-medium mb-2 line-clamp-1 group-hover:text-[#ff69b4] transition-colors">
+            <h3 className="text-gray-800 font-medium mb-2 line-clamp-1 group-hover:text-primary-500 transition-colors">
               {product.name}
             </h3>
             <div className="flex items-center justify-between">
-              <p className="text-[#ff69b4] font-semibold">
+              <p className="text-primary-500 font-semibold">
                 {currency}{product.price}
               </p>
               {product.oldPrice && (
-                <p className="text-gray-600 text-sm line-through">
+                <p className="text-gray-500 text-sm line-through">
                   {currency}{product.oldPrice}
                 </p>
               )}

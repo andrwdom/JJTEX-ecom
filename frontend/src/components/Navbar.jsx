@@ -138,7 +138,7 @@ const Navbar = () => {
                   />
                 </div>
               </Link>
-              <p className="text-gray-600 text-sm">
+              <p className="text-gray-500 text-sm">
                 Explore Our <span className="font-semibold text-black">New</span> Collection
               </p>
             </motion.div>
@@ -208,10 +208,10 @@ const Navbar = () => {
                   <NavLink 
                     to={item === 'HOME' ? '/' : `/${item.toLowerCase()}`}
                     className={({ isActive }) => 
-                      `relative text-gray-700 hover:text-[#ff69b4] pb-2 font-medium transition-colors duration-300 ${
+                      `relative text-gray-700 hover:text-primary-500 pb-2 font-medium transition-colors duration-300 ${
                         isActive 
-                          ? 'text-[#ff69b4] after:content-[""] after:absolute after:bottom-0 after:left-0 after:w-full after:h-0.5 after:bg-[#ff69b4] after:transform after:scale-x-100 after:transition-transform after:duration-300 after:rounded-full' 
-                          : 'after:content-[""] after:absolute after:bottom-0 after:left-0 after:w-full after:h-0.5 after:bg-[#ff69b4] after:transform after:scale-x-0 after:transition-transform after:duration-300 hover:after:scale-x-100 after:rounded-full'
+                          ? 'text-primary-500 after:content-[""] after:absolute after:bottom-0 after:left-0 after:w-full after:h-0.5 after:bg-primary-500 after:transform after:scale-x-100 after:transition-transform after:duration-300 after:rounded-full' 
+                          : 'after:content-[""] after:absolute after:bottom-0 after:left-0 after:w-full after:h-0.5 after:bg-primary-500 after:transform after:scale-x-0 after:transition-transform after:duration-300 hover:after:scale-x-100 after:rounded-full'
                       }`
                     }
                   >
@@ -264,7 +264,7 @@ const Navbar = () => {
                             <li key={item}>
                               <button
                                 onClick={() => handleNavigation(item === 'HOME' ? '/' : `/${item.toLowerCase()}`)}
-                              className="w-full text-left py-3 px-4 rounded-lg hover:bg-[#f3e5f5] text-gray-800 font-medium transition-colors hover:text-[#ff69b4] text-base"
+                              className="w-full text-left py-3 px-4 rounded-lg hover:bg-primary-50 text-gray-800 font-medium transition-colors hover:text-primary-500 text-base"
                               >
                                 {item}
                               </button>
