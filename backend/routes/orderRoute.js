@@ -12,7 +12,7 @@ orderRouter.post('/status',adminAuth,updateStatus)
 // User Features
 orderRouter.post('/userorders',verifyToken,userOrders)
 orderRouter.post('/place',verifyToken,placeOrder)
-orderRouter.post('/place-phonepe',verifyToken,placeOrderPhonePe)
+orderRouter.post('/phonepe',verifyToken,placeOrderPhonePe)
 orderRouter.post('/verify-phonepe',verifyPhonePe)
 orderRouter.get('/status-phonepe/:transactionId', checkPhonePeStatus)
 orderRouter.post('/refund-callback-phonepe', (req, res) => {
@@ -21,8 +21,6 @@ orderRouter.post('/refund-callback-phonepe', (req, res) => {
 });
 orderRouter.post('/cancel',verifyToken,cancelOrder)
 
-// Add PhonePe route if not already present
-orderRouter.post('/phonepe', authUser, placeOrderPhonePe)
-orderRouter.post('/verifyPhonePe', authUser, verifyPhonePe)
-
 export default orderRouter
+
+
