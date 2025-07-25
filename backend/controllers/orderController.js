@@ -609,4 +609,17 @@ const getAllOrders = async (req, res) => {
     }
 };
 
+const placeOrderStripe = async (req, res) => {
+    try {
+        res.json({ 
+            success: false, 
+            message: "Stripe payment integration not implemented yet" 
+        });
+    } catch (error) {
+        console.log(error);
+        res.json({ success: false, message: error.message });
+    }
+}
+
 export {verifyRazorpay, verifyStripe, verifyPhonePe, placeOrder, placeOrderStripe, placeOrderRazorpay, placeOrderPhonePe, processCardPayment, allOrders, userOrders, updateStatus, cancelOrder, getUserOrders, getAllOrders, checkPhonePeStatus, refundPhonePe}
+
