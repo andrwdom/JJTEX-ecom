@@ -621,5 +621,9 @@ const placeOrderStripe = async (req, res) => {
     }
 }
 
-export {verifyRazorpay, verifyStripe, verifyPhonePe, placeOrder, placeOrderStripe, placeOrderRazorpay, placeOrderPhonePe, processCardPayment, allOrders, userOrders, updateStatus, cancelOrder, getUserOrders, getAllOrders, checkPhonePeStatus, refundPhonePe}
+export {verifyPhonePe, placeOrder, placeOrderPhonePe, allOrders, userOrders, updateStatus, cancelOrder, getUserOrders, getAllOrders, checkPhonePeStatus, refundPhonePe}
+
+
+
+
 
