@@ -21,4 +21,8 @@ orderRouter.post('/refund-callback-phonepe', (req, res) => {
 });
 orderRouter.post('/cancel',verifyToken,cancelOrder)
 
+// Add PhonePe route if not already present
+orderRouter.post('/phonepe', authUser, placeOrderPhonePe)
+orderRouter.post('/verifyPhonePe', authUser, verifyPhonePe)
+
 export default orderRouter

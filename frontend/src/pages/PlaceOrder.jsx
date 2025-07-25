@@ -49,77 +49,39 @@ const PlaceOrder = () => {
     }
 
     const onSubmitHandler = async (event) => {
-        event.preventDefault()
-
-        // Validate all fields before submission
-        const requiredFields = Object.entries(formData);
-        const emptyFields = requiredFields.filter(([key, value]) => !value);
-        
-        if (emptyFields.length > 0) {
-            toast.error('Please fill in all required fields');
-            return;
-        }
-
-        if (!method) {
-            toast.error('Please select a payment method');
-            return;
-        }
-
+        event.preventDefault();
         try {
-            let orderItems = []
-
-            for (const items in cartItems) {
-                for (const item in cartItems[items]) {
-                    if (cartItems[items][item] > 0) {
-                        const itemInfo = structuredClone(products.find((product) => product._id === items))
-                        if (itemInfo) {
-                            itemInfo.size = item
-                            itemInfo.quantity = cartItems[items][item]
-                            orderItems.push(itemInfo)
-                        }
-                    }
-                }
-            }
-
-            const orderData = {
+            let orderData = {
                 address: formData,
-                items: orderItems,
-                amount: getCartAmount() - (getCartAmount() * discount / 100) + delivery_fee,
-                userId: JSON.parse(atob(token.split('.')[1])).id
+                items: cartItems,
+                amount: getCartAmount() + delivery_fee
             }
 
-            if (method === 'cod') {
-                try {
-                    const response = await axios.post(backendUrl + '/api/order/place', orderData, { headers: { token } })
+            switch (method) {
+                case 'cod':
+                    response = await axios.post(backendUrl + '/api/order/place', orderData, {headers: {token}});
+                    break;
+                
+                case 'phonepe':
+                    response = await axios.post(backendUrl + '/api/order/phonepe', orderData, {headers: {token}});
                     if (response.data.success) {
-                        navigate('/orders')
-                        setCartItems({})
-                        toast.success('Order placed successfully!')
-                    } else {
-                        toast.error(response.data.message || 'Failed to place order')
+                        window.location.href = response.data.payment_url;
                     }
-                } catch (error) {
-                    console.log(error)
-                    toast.error(error.response?.data?.message || 'Failed to place order')
-                }
-            }
-            else if (method === 'phonepe') {
-                try {
-                    const responsePhonePe = await axios.post(backendUrl + '/api/order/place-phonepe', orderData, { headers: { token } })
-                    if (responsePhonePe.data.success) {
-                        window.location.href = responsePhonePe.data.session_url;
-                    } else {
-                        toast.error(responsePhonePe.data.message || 'Failed to initialize payment')
-                    }
-                } catch (error) {
-                    console.log(error)
-                    toast.error(error.response?.data?.message || 'Failed to initialize payment')
-                }
+                    break;
+                
+                default:
+                    break;
             }
 
+            if (response.data.success) {
+                setCartItems({});
+                navigate('/orders');
+            } else {
+                toast.error(response.data.message);
+            }
         } catch (error) {
-            console.log(error)
-            toast.error(error.message || 'Something went wrong')
+            console.log(error);
+            toast.error(error.message);
         }
     }
 
@@ -194,16 +156,17 @@ const PlaceOrder = () => {
                         {/* Payment Method */}
                         <div className="border border-gray-200 rounded-xl p-5 space-y-3 bg-white shadow-sm">
                             <p className="text-lg sm:text-xl font-bold mb-2 text-gray-800">Payment Method</p>
-                            <div className="space-y-2">
-                                <div onClick={() => setMethod('cod')} className={`flex gap-4 items-center border p-4 rounded-lg cursor-pointer transition-all duration-200 ${method === 'cod' ? 'border-[#ff69b4] bg-pink-50' : 'border-gray-200 hover:border-gray-300'}`}>
-                                    <input type="radio" checked={method === 'cod'} onChange={() => setMethod('cod')} className="text-pink-500 focus:ring-pink-500" />
-                                    <img src={assets['cash-on-delivery']} className="w-12 h-12 object-contain" alt="Cash on Delivery" />
-                                    <span className="text-gray-900 font-medium">Cash on Delivery</span>
-                            </div>
-                                <div onClick={() => setMethod('phonepe')} className={`flex gap-4 items-center border p-4 rounded-lg cursor-pointer transition-all duration-200 ${method === 'phonepe' ? 'border-[#ff69b4] bg-pink-50' : 'border-gray-200 hover:border-gray-300'}`}>
-                                    <input type="radio" checked={method === 'phonepe'} onChange={() => setMethod('phonepe')} className="text-pink-500 focus:ring-pink-500" />
-                                    <img src={assets.phonepe_logo} className="w-24 h-8 object-contain" alt="PhonePe" />
-                                    <span className="text-gray-900 font-medium">PhonePe</span>
+                            <div className='flex gap-3 flex-col lg:flex-row'>
+                                <div onClick={() => setMethod('cod')} className='flex items-center gap-3 border p-2 px-3 cursor-pointer'>
+                                    <p className={`min-w-3.5 h-3.5 border rounded-full ${method === 'cod' ? 'bg-green-400' : ''}`}></p>
+                                    <img className='h-5 mx-4' src={assets.cod_icon} alt="" />
+                                    <p className='text-gray-500 text-sm font-medium mx-4'>CASH ON DELIVERY</p>
+                                </div>
+                                
+                                <div onClick={() => setMethod('phonepe')} className='flex items-center gap-3 border p-2 px-3 cursor-pointer'>
+                                    <p className={`min-w-3.5 h-3.5 border rounded-full ${method === 'phonepe' ? 'bg-green-400' : ''}`}></p>
+                                    <img className='h-5 mx-4' src={assets.phonepe_logo} alt="" />
+                                    <p className='text-gray-500 text-sm font-medium mx-4'>PHONEPE</p>
                                 </div>
                             </div>
                         </div>
@@ -285,3 +248,8 @@ const PlaceOrder = () => {
 }
 
 export default PlaceOrder
+
+
+
+
+
