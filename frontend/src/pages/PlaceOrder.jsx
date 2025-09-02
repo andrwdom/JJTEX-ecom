@@ -7,6 +7,9 @@ import axios from 'axios'
 import { toast } from 'react-toastify'
 import { motion, AnimatePresence } from 'framer-motion'
 import { CurrencyRupeeIcon, CreditCardIcon } from '@heroicons/react/24/outline'
+import PhonePeIcon from '../components/PhonePeIcon'
+import RazorpayIcon from '../components/RazorpayIcon'
+import StripeIcon from '../components/StripeIcon'
 
 const PlaceOrder = () => {
     const [method, setMethod] = useState('');
@@ -116,6 +119,36 @@ const PlaceOrder = () => {
                     toast.error(error.response?.data?.message || 'Failed to initialize payment')
                 }
             }
+            else if (method === 'razorpay') {
+                try {
+                    const responseRazorpay = await axios.post(backendUrl + '/api/order/place-razorpay', orderData, { headers: { token } })
+                    if (responseRazorpay.data.success) {
+                        // Handle Razorpay payment flow
+                        toast.success('Razorpay payment initialized!')
+                        // You can add Razorpay payment handling here
+                    } else {
+                        toast.error(responseRazorpay.data.message || 'Failed to initialize Razorpay payment')
+                    }
+                } catch (error) {
+                    console.log(error)
+                    toast.error(error.response?.data?.message || 'Failed to initialize Razorpay payment')
+                }
+            }
+            else if (method === 'stripe') {
+                try {
+                    const responseStripe = await axios.post(backendUrl + '/api/order/place-stripe', orderData, { headers: { token } })
+                    if (responseStripe.data.success) {
+                        // Handle Stripe payment flow
+                        toast.success('Stripe payment initialized!')
+                        // You can add Stripe payment handling here
+                    } else {
+                        toast.error(responseStripe.data.message || 'Failed to initialize Stripe payment')
+                    }
+                } catch (error) {
+                    console.log(error)
+                    toast.error(error.response?.data?.message || 'Failed to initialize Stripe payment')
+                }
+            }
 
         } catch (error) {
             console.log(error)
@@ -199,11 +232,21 @@ const PlaceOrder = () => {
                                     <input type="radio" checked={method === 'cod'} onChange={() => setMethod('cod')} className="text-pink-500 focus:ring-pink-500" />
                                     <img src={assets['cash-on-delivery']} className="w-12 h-12 object-contain" alt="Cash on Delivery" />
                                     <span className="text-gray-900 font-medium">Cash on Delivery</span>
-                            </div>
+                                </div>
                                 <div onClick={() => setMethod('phonepe')} className={`flex gap-4 items-center border p-4 rounded-lg cursor-pointer transition-all duration-200 ${method === 'phonepe' ? 'border-[#ff69b4] bg-pink-50' : 'border-gray-200 hover:border-gray-300'}`}>
                                     <input type="radio" checked={method === 'phonepe'} onChange={() => setMethod('phonepe')} className="text-pink-500 focus:ring-pink-500" />
-                                    <img src={assets.phonepe_logo} className="w-24 h-8 object-contain" alt="PhonePe" />
+                                    <PhonePeIcon />
                                     <span className="text-gray-900 font-medium">PhonePe</span>
+                                </div>
+                                <div onClick={() => setMethod('razorpay')} className={`flex gap-4 items-center border p-4 rounded-lg cursor-pointer transition-all duration-200 ${method === 'razorpay' ? 'border-[#ff69b4] bg-pink-50' : 'border-gray-200 hover:border-gray-300'}`}>
+                                    <input type="radio" checked={method === 'razorpay'} onChange={() => setMethod('razorpay')} className="text-pink-500 focus:ring-pink-500" />
+                                    <RazorpayIcon />
+                                    <span className="text-gray-900 font-medium">Razorpay</span>
+                                </div>
+                                <div onClick={() => setMethod('stripe')} className={`flex gap-4 items-center border p-4 rounded-lg cursor-pointer transition-all duration-200 ${method === 'stripe' ? 'border-[#ff69b4] bg-pink-50' : 'border-gray-200 hover:border-gray-300'}`}>
+                                    <input type="radio" checked={method === 'stripe'} onChange={() => setMethod('stripe')} className="text-pink-500 focus:ring-pink-500" />
+                                    <StripeIcon />
+                                    <span className="text-gray-900 font-medium">Stripe</span>
                                 </div>
                             </div>
                         </div>

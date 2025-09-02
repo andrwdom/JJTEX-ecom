@@ -52,7 +52,9 @@ const ProductCard = ({ product }) => {
 
   const handleAddToCart = (e) => {
     e.preventDefault()
-    addToCart(product._id)
+    // Use the first available size or 'default' if no sizes
+    const size = product.sizes && product.sizes.length > 0 ? product.sizes[0].size : 'default'
+    addToCart(product._id, size)
     setShowConfetti(true)
     setTimeout(() => setShowConfetti(false), 900)
   }

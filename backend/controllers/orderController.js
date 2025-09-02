@@ -3,35 +3,102 @@ import userModel from "../models/userModel.js";
 import productModel from "../models/productModel.js";
 import sha256 from "sha256";
 import axios from "axios";
+import { StandardCheckoutClient, Env, StandardCheckoutPayRequest } from 'pg-sdk-node';
+import { randomUUID } from 'crypto';
 
 // global variables
 const currency = 'inr'
 const deliveryCharge = 10
 
-const PHONEPE_MERCHANT_ID = process.env.PHONEPE_MERCHANT_ID;
-const PHONEPE_SALT_KEY = process.env.PHONEPE_SALT_KEY;
+const PHONEPE_MERCHANT_ID = process.env.PHONEPE_MERCHANT_ID || "TEST-M2265MTOB2G4J_25072";
+const PHONEPE_SALT_KEY = process.env.PHONEPE_SALT_KEY || "OGM0ZTk2NjctZDE5OS00YzViLTkxMzYtYTEwNDQ1YmE3NDFi";
 
-async function updateProductStock(items) {
+// Initialize PhonePe client with correct test credentials
+const clientId = process.env.PHONEPE_CLIENT_ID || "TEST-M2265MTOB2G4J_25072";
+const clientSecret = process.env.PHONEPE_CLIENT_SECRET || "OGM0ZTk2NjctZDE5OS00YzViLTkxMzYtYTEwNDQ1YmE3NDFi";
+const clientVersion = 1;
+const env = Env.SANDBOX; // Force sandbox environment for testing
+
+const phonepeClient = StandardCheckoutClient.getInstance(clientId, clientSecret, clientVersion, env);
+
+// Log PhonePe client configuration
+console.log('PhonePe client initialized with:', {
+    clientId,
+    clientSecret: clientSecret ? '***' + clientSecret.slice(-4) : 'missing',
+    clientVersion,
+    env: env === Env.SANDBOX ? 'SANDBOX' : 'PRODUCTION',
+    merchantId: PHONEPE_MERCHANT_ID,
+    saltKey: PHONEPE_SALT_KEY ? '***' + PHONEPE_SALT_KEY.slice(-4) : 'missing'
+});
+
+// Test PhonePe SDK functionality
+try {
+    const testBuilder = StandardCheckoutPayRequest.builder();
+    console.log('PhonePe SDK test - Available builder methods:', Object.getOwnPropertyNames(testBuilder).filter(name => typeof testBuilder[name] === 'function'));
+} catch (error) {
+    console.error('PhonePe SDK test failed:', error.message);
+}
+
+async function checkStockAvailability(items) {
+    console.log('checkStockAvailability called with items:', items.length);
     for (const item of items) {
+        console.log('Checking stock for item:', { id: item._id, name: item.name, size: item.size, quantity: item.quantity });
+        
         const product = await productModel.findById(item._id);
         if (!product) {
+            console.error('Product not found:', item._id);
+            throw new Error(`Product ${item.name} not found`);
+        }
+        
+        const sizeIndex = product.sizes.findIndex(s => s.size === item.size);
+        if (sizeIndex === -1) {
+            console.error('Size not found:', { product: product.name, size: item.size });
+            throw new Error(`Size ${item.size} not found for product ${item.name}`);
+        }
+        
+        const availableStock = product.sizes[sizeIndex].stock;
+        console.log('Stock check result:', { product: product.name, size: item.size, available: availableStock, requested: item.quantity });
+        
+        if (availableStock < item.quantity) {
+            console.error('Insufficient stock:', { product: product.name, size: item.size, available: availableStock, requested: item.quantity });
+            throw new Error(`Insufficient stock for ${item.name} in size ${item.size}. Only ${availableStock} available.`);
+        }
+    }
+    console.log('All stock availability checks passed');
+}
+
+async function updateProductStock(items) {
+    console.log('updateProductStock called with items:', items.length);
+    for (const item of items) {
+        console.log('Updating stock for item:', { id: item._id, name: item.name, size: item.size, quantity: item.quantity });
+        
+        const product = await productModel.findById(item._id);
+        if (!product) {
+            console.error('Product not found in updateProductStock:', item._id);
             throw new Error(`Product ${item.name} not found`);
         }
         
         // Find the size object and update stock
         const sizeIndex = product.sizes.findIndex(s => s.size === item.size);
         if (sizeIndex === -1) {
+            console.error('Size not found in updateProductStock:', { product: product.name, size: item.size });
             throw new Error(`Size ${item.size} not found for product ${item.name}`);
         }
         
-        if (product.sizes[sizeIndex].stock < item.quantity) {
-            throw new Error(`Insufficient stock for ${item.name} in size ${item.size}. Only ${product.sizes[sizeIndex].stock} available.`);
+        const currentStock = product.sizes[sizeIndex].stock;
+        console.log('Stock update check:', { product: product.name, size: item.size, current: currentStock, requested: item.quantity });
+        
+        if (currentStock < item.quantity) {
+            console.error('Insufficient stock in updateProductStock:', { product: product.name, size: item.size, current: currentStock, requested: item.quantity });
+            throw new Error(`Insufficient stock for ${item.name} in size ${item.size}. Only ${currentStock} available.`);
         }
         
         // Update stock
         product.sizes[sizeIndex].stock -= item.quantity;
         await product.save();
+        console.log('Stock updated successfully:', { product: product.name, size: item.size, newStock: product.sizes[sizeIndex].stock });
     }
+    console.log('All stock updates completed');
 }
 
 // Placing orders using COD Method
@@ -39,8 +106,12 @@ const placeOrder = async (req,res) => {
     try {
         const { userId, items, amount, address} = req.body;
 
+        console.log('COD order request:', { userId, items: items.length, amount });
+
         // Update product stock
+        console.log('Updating stock for COD order...');
         await updateProductStock(items);
+        console.log('Stock updated for COD order');
 
         const orderData = {
             userId,
@@ -54,13 +125,15 @@ const placeOrder = async (req,res) => {
 
         const newOrder = new orderModel(orderData)
         await newOrder.save()
+        console.log('COD order created:', newOrder._id);
 
         await userModel.findByIdAndUpdate(userId,{cartData:{}})
 
         res.json({success:true,message:"Order Placed"})
 
     } catch (error) {
-        console.log(error)
+        console.error("COD Order Error:", error);
+        console.error("COD Order Error Stack:", error.stack);
         res.json({success:false,message:error.message})
     }
 }
@@ -70,7 +143,12 @@ const placeOrderPhonePe = async (req, res) => {
         const { userId, items, amount, address } = req.body;
         const { origin } = req.headers;
 
-        await updateProductStock(items);
+        console.log('PhonePe order request:', { userId, items: items.length, amount, origin });
+
+        // Check stock availability without reducing it
+        console.log('Checking stock availability for PhonePe order...');
+        await checkStockAvailability(items);
+        console.log('Stock availability check passed for PhonePe order');
 
         const orderData = {
             userId,
@@ -84,71 +162,202 @@ const placeOrderPhonePe = async (req, res) => {
 
         const newOrder = new orderModel(orderData);
         await newOrder.save();
+        console.log('PhonePe order created:', newOrder._id);
 
-        const merchantTransactionId = newOrder._id.toString();
-        
-        const payload = {
+        const merchantOrderId = newOrder._id.toString();
+        const redirectUrl = `${origin}/verify?success=true&orderId=${merchantOrderId}&method=phonepe`;
+
+        // Create PhonePe payment request using official SDK
+        const request = StandardCheckoutPayRequest.builder()
+            .merchantOrderId(merchantOrderId)
+            .amount(amount * 100) // Amount in paise
+            .redirectUrl(redirectUrl)
+            .build();
+
+        console.log('Initiating PhonePe payment with merchant order ID:', merchantOrderId);
+        console.log('PhonePe request details:', {
+            merchantOrderId,
+            amount: amount * 100,
+            redirectUrl,
             merchantId: PHONEPE_MERCHANT_ID,
-            merchantTransactionId: merchantTransactionId,
-            merchantUserId: userId,
-            amount: amount * 100, // Amount in paise
-            redirectUrl: `${origin}/verify?success=true&orderId=${merchantTransactionId}`,
-            redirectMode: "REDIRECT",
-            callbackUrl: `${process.env.BACKEND_URL}/api/order/verify-phonepe`,
-            mobileNumber: address.phone || '9999999999',
-            paymentInstrument: {
-                type: "PAY_PAGE"
-            }
-        };
-
-        const base64Payload = Buffer.from(JSON.stringify(payload)).toString('base64');
-        const checksum = sha256(base64Payload + '/pg/v1/pay' + PHONEPE_SALT_KEY) + '###1';
-
-        const response = await axios.post('https://api-preprod.phonepe.com/apis/pg-sandbox/pg/v1/pay', { request: base64Payload }, {
-            headers: {
-                'Content-Type': 'application/json',
-                'X-VERIFY': checksum,
-                'accept': 'application/json'
-            }
+            clientId,
+            clientSecret,
+            env: 'SANDBOX',
+            callbackUrl: "https://api.jjtextiles.com/api/order/verify-phonepe"
         });
+        
+        try {
+            const response = await phonepeClient.pay(request);
+            const checkoutPageUrl = response.redirectUrl;
+            console.log('PhonePe payment initiated successfully, redirect URL generated:', checkoutPageUrl);
 
-        res.json({ success: true, session_url: response.data.data.instrumentResponse.redirectInfo.url });
+            res.json({ success: true, session_url: checkoutPageUrl });
+        } catch (sdkError) {
+            console.error("PhonePe SDK Error:", sdkError);
+            
+            // Fallback to direct API call if SDK fails
+            console.log("Attempting fallback PhonePe API call...");
+            
+            const payload = {
+                merchantId: PHONEPE_MERCHANT_ID,
+                merchantTransactionId: merchantOrderId,
+                amount: amount * 100,
+                redirectUrl: redirectUrl,
+                redirectMode: "POST",
+                callbackUrl: "https://api.jjtextiles.com/api/order/verify-phonepe",
+                merchantUserId: "MUID" + Date.now(),
+                mobileNumber: "9999999999",
+                paymentInstrument: {
+                    type: "PAY_PAGE"
+                },
+                merchantOrderId: merchantOrderId
+            };
+
+            const base64Payload = Buffer.from(JSON.stringify(payload)).toString('base64');
+            const checksum = sha256(base64Payload + '/pg/v1/pay' + PHONEPE_SALT_KEY) + '###1';
+
+            const fallbackResponse = await axios.post('https://api-preprod.phonepe.com/apis/pg-sandbox/pg/v1/pay', 
+                { request: base64Payload }, 
+                {
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-VERIFY': checksum,
+                        'accept': 'application/json'
+                    }
+                }
+            );
+
+            console.log('PhonePe fallback API response:', fallbackResponse.data);
+            
+            if (fallbackResponse.data.success) {
+                const redirectUrl = fallbackResponse.data.data.instrumentResponse.redirectInfo.url;
+                console.log('PhonePe fallback redirect URL:', redirectUrl);
+                res.json({ success: true, session_url: redirectUrl });
+            } else {
+                console.error('PhonePe fallback API error:', fallbackResponse.data);
+                console.error('PhonePe API error details:', {
+                    code: fallbackResponse.data.code,
+                    message: fallbackResponse.data.message,
+                    data: fallbackResponse.data.data
+                });
+                throw new Error(fallbackResponse.data.message || 'Payment initialization failed');
+            }
+        }
 
     } catch (error) {
-        console.error("PhonePe Error:", error.response ? error.response.data : error.message);
-        res.json({ success: false, message: error.message });
+        console.error("PhonePe Error:", error);
+        console.error("PhonePe Error Stack:", error.stack);
+        
+        // Check for specific PhonePe error types
+        if (error.message && error.message.includes('unauthorized')) {
+            console.error("PhonePe Unauthorized Error - Check credentials and configuration");
+            res.json({ success: false, message: "Payment gateway configuration error. Please try again later." });
+        } else if (error.message && error.message.includes('network')) {
+            console.error("PhonePe Network Error");
+            res.json({ success: false, message: "Network error. Please try again." });
+        } else if (error.response && error.response.status === 401) {
+            console.error("PhonePe API Unauthorized Error");
+            res.json({ success: false, message: "Payment gateway authentication failed. Please try again later." });
+        } else if (error.response && error.response.status === 400) {
+            console.error("PhonePe API Bad Request Error:", error.response.data);
+            res.json({ success: false, message: "Invalid payment request. Please try again." });
+        } else {
+            res.json({ success: false, message: error.message || "Payment initialization failed" });
+        }
     }
 };
 
 
 const verifyPhonePe = async (req, res) => {
     try {
-        const x_verify = req.headers['x-verify'];
-        const responsePayload = req.body.response;
+        const authorizationHeaderData = req.headers['authorization'];
+        const phonepeS2SCallbackResponseBodyString = JSON.stringify(req.body);
 
-        if (!responsePayload || !x_verify) {
+        if (!authorizationHeaderData || !phonepeS2SCallbackResponseBodyString) {
             return res.status(400).send({ success: false, message: "Invalid callback" });
         }
 
-        const decodedResponse = JSON.parse(Buffer.from(responsePayload, 'base64').toString('utf8'));
-        const { merchantId, merchantTransactionId, state } = decodedResponse;
+        const usernameConfigured = process.env.PHONEPE_USERNAME || "PGTESTPAYUAT";
+        const passwordConfigured = process.env.PHONEPE_PASSWORD || "099eb0cd-02cf-4e2a-8aca-3e6c6aff0399";
         
-        const saltKey = PHONEPE_SALT_KEY;
-        const saltIndex = 1;
+        console.log('PhonePe webhook verification with credentials:', {
+            username: usernameConfigured,
+            hasPassword: !!passwordConfigured
+        });
 
-        const calculated_x_verify = sha256(responsePayload + saltKey) + '###' + saltIndex;
-        
-        if (x_verify !== calculated_x_verify) {
-            console.error("PhonePe webhook verification failed: Checksum mismatch");
+        try {
+            console.log('PhonePe webhook data:', {
+                hasAuthHeader: !!authorizationHeaderData,
+                bodyLength: phonepeS2SCallbackResponseBodyString.length
+            });
+            
+            const callbackResponse = phonepeClient.validateCallback(
+                usernameConfigured,
+                passwordConfigured,
+                authorizationHeaderData,
+                phonepeS2SCallbackResponseBodyString
+            );
+
+            const orderId = callbackResponse.payload.orderId;
+            const state = callbackResponse.payload.state;
+            
+            console.log('PhonePe webhook validation successful:', { orderId, state });
+
+            if (state === 'COMPLETED') {
+                // Reduce stock only when payment is successful
+                const order = await orderModel.findById(orderId);
+                if (order) {
+                    await updateProductStock(order.items);
+                }
+                await orderModel.findByIdAndUpdate(orderId, { payment: true });
+                console.log(`Order ${orderId} payment confirmed via PhonePe webhook. Stock reduced.`);
+            } else if (state === 'FAILED') {
+                const order = await orderModel.findById(orderId);
+                if (order) {
+                    // Delete the order for failed payment (no stock to restore since we didn't reduce it)
+                    await orderModel.findByIdAndDelete(orderId);
+                    console.log(`Order ${orderId} failed. Order deleted.`);
+                }
+            }
+            // For PENDING status, we do nothing in the webhook and rely on the cron job for reconciliation.
+
+            return res.status(200).send({ success: true });
+
+        } catch (validationError) {
+            console.error("PhonePe webhook verification failed:", validationError);
+            console.error("PhonePe webhook validation error stack:", validationError.stack);
+            
+            // Log the webhook data for debugging
+            console.log("Webhook data for debugging:", {
+                authorizationHeader: authorizationHeaderData ? authorizationHeaderData.substring(0, 50) + '...' : 'missing',
+                bodyLength: phonepeS2SCallbackResponseBodyString.length,
+                bodyPreview: phonepeS2SCallbackResponseBodyString.substring(0, 200) + '...'
+            });
+            
             return res.status(401).send({ success: false, message: "Webhook verification failed" });
         }
-        
-        if (state === 'COMPLETED') {
-            await orderModel.findByIdAndUpdate(merchantTransactionId, { payment: true });
-            console.log(`Order ${merchantTransactionId} payment confirmed via PhonePe webhook.`);
-        } else if (state === 'FAILED') {
-            const order = await orderModel.findById(merchantTransactionId);
-            if (order) {
+
+    } catch (error) {
+        console.error('PhonePe verification error:', error);
+        return res.status(500).send({ success: false, message: 'Internal server error' });
+    }
+};
+
+const checkPhonePeStatus = async (req, res) => {
+    const merchantOrderId = req.params.transactionId;
+
+    try {
+        console.log('Checking PhonePe status for order:', merchantOrderId);
+        const response = await phonepeClient.getOrderStatus(merchantOrderId);
+        const state = response.state;
+        console.log('PhonePe status response:', { orderId: merchantOrderId, state });
+
+        const order = await orderModel.findById(merchantOrderId);
+        if (order) {
+            if (state === 'COMPLETED' && order.payment === false) {
+                await orderModel.findByIdAndUpdate(merchantOrderId, { payment: true });
+                console.log(`Order ${merchantOrderId} payment confirmed via status check.`);
+            } else if (state === 'FAILED' && order.payment === false) {
                 // Restore stock for failed payment
                 for (const item of order.items) {
                     const product = await productModel.findById(item._id);
@@ -160,62 +369,23 @@ const verifyPhonePe = async (req, res) => {
                         }
                     }
                 }
-                await orderModel.findByIdAndDelete(merchantTransactionId);
-                console.log(`Order ${merchantTransactionId} failed. Stock restored.`);
+                await orderModel.findByIdAndDelete(merchantOrderId);
+                console.log(`Order ${merchantOrderId} failed. Stock restored via status check.`);
             }
         }
-        // For PENDING status, we do nothing in the webhook and rely on the cron job for reconciliation.
+
+        res.json({ success: true, state: state });
+    } catch (error) {
+        console.error("PhonePe Status Check Error:", error);
+        console.error("PhonePe Status Check Error Stack:", error.stack);
         
-        return res.status(200).send({ success: true });
-
-    } catch (error) {
-        console.error('PhonePe verification error:', error);
-        return res.status(500).send({ success: false, message: 'Internal server error' });
-    }
-};
-
-const checkPhonePeStatus = async (req, res) => {
-    const merchantTransactionId = req.params.transactionId;
-    const merchantId = PHONEPE_MERCHANT_ID;
-
-    const keyIndex = 1;
-    const string = `/pg/v1/status/${merchantId}/${merchantTransactionId}` + PHONEPE_SALT_KEY;
-    const sha256_val = sha256(string);
-    const x_verify = sha256_val + '###' + keyIndex;
-
-    try {
-        const response = await axios.get(`https://api-preprod.phonepe.com/apis/pg-sandbox/pg/v1/status/${merchantId}/${merchantTransactionId}`, {
-            headers: {
-                'Content-Type': 'application/json',
-                'X-VERIFY': x_verify,
-                'X-MERCHANT-ID': merchantId
-            }
-        });
-
-        if (response.data.success) {
-            const order = await orderModel.findById(merchantTransactionId);
-            if (response.data.code === 'PAYMENT_SUCCESS' && order.payment === false) {
-                await orderModel.findByIdAndUpdate(merchantTransactionId, { payment: true });
-                console.log(`Order ${merchantTransactionId} payment confirmed via status check.`);
-            } else if (response.data.code === 'PAYMENT_ERROR' && order.payment === false) {
-                for (const item of order.items) {
-                    const product = await productModel.findById(item._id);
-                    if (product) {
-                        const sizeIndex = product.sizes.findIndex(s => s.size === item.size);
-                        if (sizeIndex !== -1) {
-                            product.sizes[sizeIndex].stock += item.quantity;
-                            await product.save();
-                        }
-                    }
-                }
-                await orderModel.findByIdAndDelete(merchantTransactionId);
-                console.log(`Order ${merchantTransactionId} failed. Stock restored via status check.`);
-            }
+        if (error.message && error.message.includes('unauthorized')) {
+            res.status(401).json({ success: false, message: "Payment gateway authentication failed" });
+        } else if (error.message && error.message.includes('not found')) {
+            res.status(404).json({ success: false, message: "Transaction not found" });
+        } else {
+            res.status(500).json({ success: false, message: error.message || "Status check failed" });
         }
-        res.json(response.data);
-    } catch (error) {
-        console.error("PhonePe Status Check Error:", error.response ? error.response.data : error.message);
-        res.status(500).json({ success: false, message: error.message });
     }
 };
 
@@ -231,7 +401,7 @@ const refundPhonePe = async (orderId, amount) => {
         originalTransactionId: originalTransactionId,
         merchantTransactionId: merchantTransactionId,
         amount: amount * 100, // Amount in paise
-        callbackUrl: `${process.env.BACKEND_URL}/api/order/refund-callback-phonepe`
+        callbackUrl: "https://api.jjtextiles.com/api/order/refund-callback-phonepe"
     };
 
     const base64Payload = Buffer.from(JSON.stringify(payload)).toString('base64');
@@ -245,55 +415,65 @@ const refundPhonePe = async (orderId, amount) => {
                 'accept': 'application/json'
             }
         });
+        console.log("PhonePe Refund API Response:", response.data);
         console.log("PhonePe Refund Response:", response.data);
         return response.data;
     } catch (error) {
         console.error("PhonePe Refund Error:", error.response ? error.response.data : error.message);
-        return { success: false, message: error.message };
+        console.error("PhonePe Refund Error Stack:", error.stack);
+        
+        if (error.response && error.response.status === 401) {
+            return { success: false, message: "Payment gateway authentication failed" };
+        } else if (error.response && error.response.status === 404) {
+            return { success: false, message: "Transaction not found" };
+        } else {
+            return { success: false, message: error.message || "Refund failed" };
+        }
     }
 };
 
 // Verify Stripe 
-const verifyStripe = async (req,res) => {
-    const { orderId, success, userId } = req.body
-
+const verifyStripe = async (req, res) => {
     try {
-        if (success === "true") {
-            await orderModel.findByIdAndUpdate(orderId, {payment:true});
-            await userModel.findByIdAndUpdate(userId, {cartData: {}})
-            res.json({success: true});
-        } else {
-            // If payment failed, restore stock
-            const order = await orderModel.findById(orderId);
-            if (order) {
-                for (const item of order.items) {
-                    const product = await productModel.findById(item._id);
-                    if (product) {
-                        const sizeIndex = product.sizes.findIndex(s => s.size === item.size);
-                        if (sizeIndex !== -1) {
-                            product.sizes[sizeIndex].stock += item.quantity;
-                            await product.save();
-                        }
-                    }
-                }
-                await orderModel.findByIdAndDelete(orderId);
-            }
-            res.json({success:false})
-        }
+        const { success, orderId } = req.body;
         
+        if (!orderId) {
+            return res.json({ success: false, message: 'Order ID is required' });
+        }
+
+        const order = await orderModel.findById(orderId);
+        if (!order) {
+            return res.json({ success: false, message: 'Order not found' });
+        }
+
+        if (success === 'true') {
+            // Update order payment status
+            await orderModel.findByIdAndUpdate(orderId, { payment: true });
+            
+            // Reduce stock for successful payment
+            await updateProductStock(order.items);
+            
+            console.log(`Order ${orderId} payment confirmed via Stripe verification. Stock reduced.`);
+            res.json({ success: true, message: 'Payment verified successfully' });
+        } else {
+            // Delete order for failed payment
+            await orderModel.findByIdAndDelete(orderId);
+            console.log(`Order ${orderId} failed. Order deleted.`);
+            res.json({ success: false, message: 'Payment failed' });
+        }
     } catch (error) {
-        console.log(error)
-        res.json({success:false,message:error.message})
+        console.error('Stripe verification error:', error);
+        res.json({ success: false, message: error.message || 'Payment verification failed' });
     }
-}
+};
 
 // Placing orders using Razorpay Method
 const placeOrderRazorpay = async (req,res) => {
     try {
         const { userId, items, amount, address} = req.body
 
-        // Update product stock
-        await updateProductStock(items);
+        // Check stock availability without reducing it
+        await checkStockAvailability(items);
 
         const orderData = {
             userId,
@@ -334,23 +514,18 @@ const verifyRazorpay = async (req,res) => {
 
         const orderInfo = await razorpayInstance.orders.fetch(razorpay_order_id)
         if (orderInfo.status === 'paid') {
+            // Reduce stock only when payment is successful
+            const order = await orderModel.findById(orderInfo.receipt);
+            if (order) {
+                await updateProductStock(order.items);
+            }
             await orderModel.findByIdAndUpdate(orderInfo.receipt,{payment:true});
             await userModel.findByIdAndUpdate(userId,{cartData:{}})
             res.json({ success: true, message: "Payment Successful" })
         } else {
-            // If payment failed, restore stock
+            // If payment failed, delete the order (no stock to restore since we didn't reduce it)
             const order = await orderModel.findById(orderInfo.receipt);
             if (order) {
-                for (const item of order.items) {
-                    const product = await productModel.findById(item._id);
-                    if (product) {
-                        const sizeIndex = product.sizes.findIndex(s => s.size === item.size);
-                        if (sizeIndex !== -1) {
-                            product.sizes[sizeIndex].stock += item.quantity;
-                            await product.save();
-                        }
-                    }
-                }
                 await orderModel.findByIdAndDelete(orderInfo.receipt);
             }
              res.json({ success: false, message: 'Payment Failed' });
@@ -531,14 +706,16 @@ const cancelOrder = async (req, res) => {
             }
         }
 
-        // Restore product stock
-        for (const item of order.items) {
-            const product = await productModel.findById(item._id);
-            if (product) {
-                const sizeIndex = product.sizes.findIndex(s => s.size === item.size);
-                if (sizeIndex !== -1) {
-                    product.sizes[sizeIndex].stock += item.quantity;
-                    await product.save();
+        // Restore product stock only if payment was successful (stock was reduced)
+        if (order.payment) {
+            for (const item of order.items) {
+                const product = await productModel.findById(item._id);
+                if (product) {
+                    const sizeIndex = product.sizes.findIndex(s => s.size === item.size);
+                    if (sizeIndex !== -1) {
+                        product.sizes[sizeIndex].stock += item.quantity;
+                        await product.save();
+                    }
                 }
             }
         }
@@ -609,4 +786,27 @@ const getAllOrders = async (req, res) => {
     }
 };
 
-export {verifyRazorpay, verifyStripe, verifyPhonePe, placeOrder, placeOrderStripe, placeOrderRazorpay, placeOrderPhonePe, processCardPayment, allOrders, userOrders, updateStatus, cancelOrder, getUserOrders, getAllOrders, checkPhonePeStatus, refundPhonePe}
+// Get order statistics (admin)
+const getOrderStats = async (req, res) => {
+    try {
+        const orders = await orderModel.find();
+        
+        const stats = {
+            totalOrders: orders.length,
+            totalRevenue: orders.filter(order => order.payment).reduce((sum, order) => sum + order.amount, 0),
+            pendingOrders: orders.filter(order => !order.payment).length,
+            completedOrders: orders.filter(order => order.payment && order.status === 'Delivered').length,
+            cancelledOrders: orders.filter(order => order.status === 'Cancelled').length,
+            phonePeOrders: orders.filter(order => order.paymentMethod === 'PhonePe').length,
+            codOrders: orders.filter(order => order.paymentMethod === 'COD').length,
+            recentOrders: orders.slice(0, 5)
+        };
+        
+        res.json({ success: true, stats });
+    } catch (error) {
+        console.error('Error fetching order stats:', error);
+        res.status(500).json({ success: false, message: 'Failed to fetch order stats' });
+    }
+};
+
+export {verifyRazorpay, verifyStripe, verifyPhonePe, placeOrder, placeOrderRazorpay, placeOrderPhonePe, allOrders, userOrders, updateStatus, cancelOrder, getUserOrders, getAllOrders, checkPhonePeStatus, refundPhonePe, getOrderStats}

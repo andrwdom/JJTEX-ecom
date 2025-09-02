@@ -1,247 +1,291 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { assets } from '../assets/assets'
-import axios from 'axios'
-import { backendUrl } from '../App'
+import { productAPI } from '../services/api'
 import { toast } from 'react-toastify'
+import { categories } from '../data/categories'
 
 const EditProduct = ({ product, token, onClose, onUpdate }) => {
   const [image1, setImage1] = useState(null)
   const [image2, setImage2] = useState(null)
   const [image3, setImage3] = useState(null)
   const [image4, setImage4] = useState(null)
-  const [name, setName] = useState(product.name)
-  const [description, setDescription] = useState(product.description)
-  const [price, setPrice] = useState(product.price)
-  const [category, setCategory] = useState(product.category)
-  const [subCategory, setSubCategory] = useState(product.subCategory)
-  const [bestseller, setBestseller] = useState(product.bestseller)
+  const [name, setName] = useState(product.name || "")
+  const [description, setDescription] = useState(product.description || "")
+  const [price, setPrice] = useState(product.price || "")
+  const [category, setCategory] = useState(product.category || "kids")
+  const [subcategory, setSubcategory] = useState(product.subCategory || "boys")
+  const [itemType, setItemType] = useState(product.type || "")
+  const [bestseller, setBestseller] = useState(product.bestseller || false)
   const [sizes, setSizes] = useState(product.sizes || [])
+  const [sizeStocks, setSizeStocks] = useState({})
+  const [loading, setLoading] = useState(false)
 
-  const onSubmitHandler = async (e) => {
-    e.preventDefault()
+  // Initialize size stocks from product data
+  useEffect(() => {
+    const stocks = {}
+    if (product.sizes) {
+      product.sizes.forEach(size => {
+        stocks[size.size] = size.stock.toString()
+      })
+    }
+    setSizeStocks(stocks)
+  }, [product])
+
+  // Get available subcategories based on selected category
+  const getSubcategories = () => {
+    if (!category || !categories[category]) return [];
+    return Object.keys(categories[category].subcategories);
+  };
+
+  // Get available item types based on selected category and subcategory
+  const getItemTypes = () => {
+    if (!category || !subcategory || !categories[category]?.subcategories[subcategory]) return [];
+    return categories[category].subcategories[subcategory].items;
+  };
+
+  // Update subcategory when category changes
+  useEffect(() => {
+    const subcategories = getSubcategories();
+    if (subcategories.length > 0 && !subcategories.includes(subcategory)) {
+      setSubcategory(subcategories[0]);
+    }
+  }, [category]);
+
+  // Update item type when subcategory changes
+  useEffect(() => {
+    const types = getItemTypes();
+    if (types.length > 0 && !types.includes(itemType)) {
+      setItemType(types[0]);
+    }
+  }, [subcategory]);
+
+  const handleImageChange = (e, setter) => {
+    const file = e.target.files[0];
+    if (file) {
+      if (file.size > 5 * 1024 * 1024) { // 5MB limit
+        toast.error('Image size should be less than 5MB');
+        return;
+      }
+      setter(file);
+    }
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+
+    if (!name || !description || !price || !category || !subcategory || !itemType) {
+      toast.error('Please fill in all required fields');
+      return;
+    }
+
+    setLoading(true);
 
     try {
-      const formData = new FormData()
+      const formData = new FormData();
+      formData.append("id", product._id);
+      formData.append("name", name);
+      formData.append("description", description);
+      formData.append("price", price);
+      formData.append("category", category);
+      formData.append("subCategory", subcategory);
+      formData.append("type", itemType);
+      formData.append("bestseller", bestseller);
+      formData.append("sizes", JSON.stringify(sizes.map(size => ({ 
+        size, 
+        stock: Number(sizeStocks[size] || 0) 
+      }))));
 
-      formData.append("id", product._id)
-      formData.append("name", name)
-      formData.append("description", description)
-      formData.append("price", price)
-      formData.append("category", category)
-      formData.append("subCategory", subCategory)
-      formData.append("bestseller", bestseller)
-      formData.append("sizes", JSON.stringify(sizes))
+      if (image1) formData.append("image1", image1);
+      if (image2) formData.append("image2", image2);
+      if (image3) formData.append("image3", image3);
+      if (image4) formData.append("image4", image4);
 
-      if (image1) formData.append("image1", image1)
-      if (image2) formData.append("image2", image2)
-      if (image3) formData.append("image3", image3)
-      if (image4) formData.append("image4", image4)
+      const response = await productAPI.update(formData);
 
-      const response = await axios.post(
-        backendUrl + "/api/product/update",
-        formData,
-        { headers: { token } }
-      )
-
-      if (response.data.success) {
-        toast.success(response.data.message)
-        onUpdate()
-        onClose()
+      if (response.success) {
+        toast.success(response.message || 'Product updated successfully');
+        onUpdate();
+        onClose();
       } else {
-        toast.error(response.data.message)
+        toast.error(response.message || 'Failed to update product');
       }
     } catch (error) {
-      console.log(error)
-      toast.error(error.message)
+      console.error('Error updating product:', error);
+      toast.error(error.response?.data?.message || 'Failed to update product');
+    } finally {
+      setLoading(false);
     }
-  }
+  };
 
   return (
-    <form onSubmit={onSubmitHandler} className='flex flex-col w-full items-start gap-3'>
-      <div className="flex justify-between items-center w-full">
-        <h2 className="text-xl font-semibold">Edit Product</h2>
-        <button
-          type="button"
-          onClick={onClose}
-          className="text-gray-500 hover:text-gray-700"
-        >
-          ✕
-        </button>
-      </div>
-
-      <div>
-        <p className='mb-2'>Product Images</p>
-        <div className='flex gap-2'>
-          <label htmlFor="image1" className="cursor-pointer">
-            <img
-              className='w-20 h-20 object-cover border rounded'
-              src={image1 ? URL.createObjectURL(image1) : product.image[0]}
-              alt=""
-            />
-            <input
-              onChange={(e) => setImage1(e.target.files[0])}
-              type="file"
-              id="image1"
-              hidden
-            />
-          </label>
-          <label htmlFor="image2" className="cursor-pointer">
-            <img
-              className='w-20 h-20 object-cover border rounded'
-              src={image2 ? URL.createObjectURL(image2) : (product.image[1] || assets.upload_area)}
-              alt=""
-            />
-            <input
-              onChange={(e) => setImage2(e.target.files[0])}
-              type="file"
-              id="image2"
-              hidden
-            />
-          </label>
-          <label htmlFor="image3" className="cursor-pointer">
-            <img
-              className='w-20 h-20 object-cover border rounded'
-              src={image3 ? URL.createObjectURL(image3) : (product.image[2] || assets.upload_area)}
-              alt=""
-            />
-            <input
-              onChange={(e) => setImage3(e.target.files[0])}
-              type="file"
-              id="image3"
-              hidden
-            />
-          </label>
-          <label htmlFor="image4" className="cursor-pointer">
-            <img
-              className='w-20 h-20 object-cover border rounded'
-              src={image4 ? URL.createObjectURL(image4) : (product.image[3] || assets.upload_area)}
-              alt=""
-            />
-            <input
-              onChange={(e) => setImage4(e.target.files[0])}
-              type="file"
-              id="image4"
-              hidden
-            />
-          </label>
-        </div>
-      </div>
-
-      <div className='w-full'>
-        <p className='mb-2'>Product name</p>
-        <input
-          onChange={(e) => setName(e.target.value)}
-          value={name}
-          className='w-full max-w-[500px] px-3 py-2 border rounded'
-          type="text"
-          placeholder='Type here'
-          required
-        />
-      </div>
-
-      <div className='w-full'>
-        <p className='mb-2'>Product description</p>
-        <textarea
-          onChange={(e) => setDescription(e.target.value)}
-          value={description}
-          className='w-full max-w-[500px] px-3 py-2 border rounded'
-          rows="4"
-          placeholder='Write content here'
-          required
-        />
-      </div>
-
-      <div className='flex flex-col sm:flex-row gap-2 w-full sm:gap-8'>
-        <div>
-          <p className='mb-2'>Product category</p>
-          <select
-            value={category}
-            onChange={(e) => setCategory(e.target.value)}
-            className='w-full px-3 py-2 border rounded'
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <div className="bg-white rounded-lg p-6 max-w-4xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+        <div className="flex justify-between items-center mb-4">
+          <h2 className="text-xl font-bold">Edit Product</h2>
+          <button 
+            onClick={onClose}
+            className="text-gray-500 hover:text-gray-700"
           >
-            <option value="Men">Men</option>
-            <option value="Women">Women</option>
-            <option value="Kids">Kids</option>
-          </select>
+            ✕
+          </button>
         </div>
 
-        <div>
-          <p className='mb-2'>Sub category</p>
-          <select
-            value={subCategory}
-            onChange={(e) => setSubCategory(e.target.value)}
-            className='w-full px-3 py-2 border rounded'
-          >
-            <option value="Topwear">Topwear</option>
-            <option value="Bottomwear">Bottomwear</option>
-            <option value="Winterwear">Winterwear</option>
-          </select>
-        </div>
-
-        <div>
-          <p className='mb-2'>Product Price</p>
-          <input
-            onChange={(e) => setPrice(e.target.value)}
-            value={price}
-            className='w-full px-3 py-2 border rounded sm:w-[120px]'
-            type="number"
-            placeholder='25'
-            required
-          />
-        </div>
-      </div>
-
-      <div>
-        <p className='mb-2'>Product Sizes</p>
-        <div className='flex gap-3'>
-          {["S", "M", "L", "XL", "XXL"].map((size) => (
-            <div
-              key={size}
-              onClick={() => setSizes(prev =>
-                prev.includes(size)
-                  ? prev.filter(item => item !== size)
-                  : [...prev, size]
-              )}
-              className="cursor-pointer"
-            >
-              <p className={`${
-                sizes.includes(size) ? "bg-pink-100" : "bg-slate-200"
-              } px-3 py-1 rounded transition-colors`}>
-                {size}
-              </p>
+        <form onSubmit={handleSubmit} className='flex flex-col w-full items-start gap-3'>
+          <div>
+            <p className='mb-2'>Upload Images (leave empty to keep existing)</p>
+            <div className='flex gap-2'>
+              <label className='border-2 border-dashed border-gray-300 rounded-lg p-4 cursor-pointer hover:border-gray-400 transition-colors'>
+                <input 
+                  type="file" 
+                  onChange={(e) => handleImageChange(e, setImage1)}
+                  className='hidden' 
+                  accept="image/*"
+                />
+                <img src={assets.upload_area} alt="" className='w-20 h-20' />
+                <p className='text-sm text-gray-500 mt-2'>Image 1</p>
+              </label>
+              <label className='border-2 border-dashed border-gray-300 rounded-lg p-4 cursor-pointer hover:border-gray-400 transition-colors'>
+                <input 
+                  type="file" 
+                  onChange={(e) => handleImageChange(e, setImage2)}
+                  className='hidden' 
+                  accept="image/*"
+                />
+                <img src={assets.upload_area} alt="" className='w-20 h-20' />
+                <p className='text-sm text-gray-500 mt-2'>Image 2</p>
+              </label>
+              <label className='border-2 border-dashed border-gray-300 rounded-lg p-4 cursor-pointer hover:border-gray-400 transition-colors'>
+                <input 
+                  type="file" 
+                  onChange={(e) => handleImageChange(e, setImage3)}
+                  className='hidden' 
+                  accept="image/*"
+                />
+                <img src={assets.upload_area} alt="" className='w-20 h-20' />
+                <p className='text-sm text-gray-500 mt-2'>Image 3</p>
+              </label>
+              <label className='border-2 border-dashed border-gray-300 rounded-lg p-4 cursor-pointer hover:border-gray-400 transition-colors'>
+                <input 
+                  type="file" 
+                  onChange={(e) => handleImageChange(e, setImage4)}
+                  className='hidden' 
+                  accept="image/*"
+                />
+                <img src={assets.upload_area} alt="" className='w-20 h-20' />
+                <p className='text-sm text-gray-500 mt-2'>Image 4</p>
+              </label>
             </div>
-          ))}
-        </div>
-      </div>
+          </div>
 
-      <div className='flex gap-2 mt-2'>
-        <input
-          onChange={() => setBestseller(prev => !prev)}
-          checked={bestseller}
-          type="checkbox"
-          id='bestseller'
-        />
-        <label className='cursor-pointer' htmlFor="bestseller">
-          Add to bestseller
-        </label>
-      </div>
+          <div className='flex flex-col gap-3 w-full'>
+            <input 
+              onChange={(e) => setName(e.target.value)} 
+              value={name} 
+              className='border border-gray-300 rounded-md px-3 py-2' 
+              type="text" 
+              placeholder='Product Name' 
+              required 
+            />
+            <textarea 
+              onChange={(e) => setDescription(e.target.value)} 
+              value={description} 
+              className='border border-gray-300 rounded-md px-3 py-2' 
+              placeholder='Product Description' 
+              rows="3"
+              required 
+            />
+            <input 
+              onChange={(e) => setPrice(e.target.value)} 
+              value={price} 
+              className='border border-gray-300 rounded-md px-3 py-2' 
+              type="number" 
+              placeholder='Product Price' 
+              required 
+            />
+          </div>
 
-      <div className="flex gap-4">
-        <button
-          type="submit"
-          className='px-6 py-2 bg-purple-400 text-white rounded hover:bg-purple-600 transition-colors'
-        >
-          Update
-        </button>
-        <button
-          type="button"
-          onClick={onClose}
-          className='px-6 py-2 bg-gray-500 text-white rounded hover:bg-gray-600 transition-colors'
-        >
-          Cancel
-        </button>
+          <div className='flex gap-3 w-full'>
+            <select 
+              onChange={(e) => setCategory(e.target.value)} 
+              value={category} 
+              className='border border-gray-300 rounded-md px-3 py-2 flex-1'
+            >
+              {Object.keys(categories).map(cat => (
+                <option key={cat} value={cat}>{categories[cat].name}</option>
+              ))}
+            </select>
+            <select 
+              onChange={(e) => setSubcategory(e.target.value)} 
+              value={subcategory} 
+              className='border border-gray-300 rounded-md px-3 py-2 flex-1'
+            >
+              {getSubcategories().map(sub => (
+                <option key={sub} value={sub}>{categories[category]?.subcategories[sub]?.name || sub}</option>
+              ))}
+            </select>
+            <select 
+              onChange={(e) => setItemType(e.target.value)} 
+              value={itemType} 
+              className='border border-gray-300 rounded-md px-3 py-2 flex-1'
+            >
+              {getItemTypes().map(type => (
+                <option key={type} value={type}>{type}</option>
+              ))}
+            </select>
+          </div>
+
+          <div className='flex items-center gap-2'>
+            <input 
+              type="checkbox" 
+              checked={bestseller} 
+              onChange={(e) => setBestseller(e.target.checked)} 
+              id="bestseller"
+            />
+            <label htmlFor="bestseller">Bestseller</label>
+          </div>
+
+          <div className='w-full'>
+            <p className='mb-2'>Sizes & Stock</p>
+            <div className='grid grid-cols-2 md:grid-cols-5 gap-2'>
+              {['S', 'M', 'L', 'XL', 'XXL'].map(size => (
+                <div key={size} className='flex flex-col gap-1'>
+                  <label className='text-sm font-medium'>{size}</label>
+                  <input 
+                    type="number" 
+                    min="0"
+                    value={sizeStocks[size] || ''} 
+                    onChange={(e) => setSizeStocks(prev => ({ ...prev, [size]: e.target.value }))}
+                    className='border border-gray-300 rounded-md px-2 py-1 text-sm'
+                    placeholder='Stock'
+                  />
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className='flex gap-2 w-full'>
+            <button 
+              type="submit" 
+              disabled={loading}
+              className={`px-6 py-2 rounded-md text-white transition-colors ${
+                loading 
+                  ? 'bg-gray-400 cursor-not-allowed' 
+                  : 'bg-blue-600 hover:bg-blue-700'
+              }`}
+            >
+              {loading ? 'Updating...' : 'Update Product'}
+            </button>
+            <button 
+              type="button"
+              onClick={onClose}
+              className='px-6 py-2 rounded-md border border-gray-300 text-gray-700 hover:bg-gray-50 transition-colors'
+            >
+              Cancel
+            </button>
+          </div>
+        </form>
       </div>
-    </form>
+    </div>
   )
 }
 

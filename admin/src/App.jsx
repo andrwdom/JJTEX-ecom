@@ -6,6 +6,7 @@ import Add from './pages/Add'
 import List from './pages/List'
 import Orders from './pages/Orders'
 import CouponManagement from './pages/CouponManagement'
+import Dashboard from './pages/Dashboard'
 import Login from './components/Login'
 import { ToastContainer } from 'react-toastify';
 import { Toaster } from 'react-hot-toast';
@@ -15,7 +16,19 @@ import CarouselManagement from './pages/CarouselManagement';
 import ProtectedRoute from './components/ProtectedRoute';
 import WithClickSpark from './components/WithClickSpark';
 
-export const backendUrl = import.meta.env.VITE_API_URL
+// Configure backend URL with fallback
+const getBackendUrl = () => {
+  const envUrl = import.meta.env.VITE_API_URL;
+  if (envUrl) return envUrl;
+  
+  // Fallback URLs based on environment
+  if (import.meta.env.DEV) {
+    return 'http://localhost:4000';
+  }
+  return 'https://api.jjtextiles.com';
+};
+
+export const backendUrl = getBackendUrl();
 export const currency = '₹'
 
 const App = () => {
@@ -25,6 +38,11 @@ const App = () => {
   useEffect(()=>{
     localStorage.setItem('token',token)
   },[token])
+
+  // Log backend URL for debugging
+  useEffect(() => {
+    console.log('Admin Panel Backend URL:', backendUrl);
+  }, []);
 
   return (
     <WithClickSpark
@@ -49,6 +67,11 @@ const App = () => {
               <Sidebar />
               <div className='w-[70%] mx-auto ml-[max(5vw,25px)] my-8 text-gray-600 text-base'>
                 <Routes>
+                  <Route path='/' element={
+                    <ProtectedRoute>
+                      <Dashboard token={token} setToken={setToken} />
+                    </ProtectedRoute>
+                  } />
                   <Route path='/add' element={
                     <ProtectedRoute>
                       <Add token={token} />

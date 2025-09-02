@@ -86,6 +86,13 @@ const registerUser = async (req, res) => {
 // Route for admin login
 const adminLogin = async (req, res) => {
     try {
+        console.log('Admin login attempt:', { 
+            email: req.body.email, 
+            hasPassword: !!req.body.password,
+            adminEmail: process.env.ADMIN_EMAIL,
+            hasAdminPassword: !!process.env.ADMIN_PASSWORD
+        });
+
         const {email, password} = req.body
 
         if (!email || !password) {
@@ -101,8 +108,10 @@ const adminLogin = async (req, res) => {
                 role: 'admin',
                 id: 'admin' // Adding an ID for consistency
             });
+            console.log('Admin login successful for:', email);
             return res.status(200).json({success: true, token});
         } else {
+            console.log('Admin login failed - invalid credentials for:', email);
             return res.status(401).json({
                 success: false, 
                 message: "Invalid credentials"
@@ -120,13 +129,37 @@ const adminLogin = async (req, res) => {
 
 export const getUserInfo = async (req, res) => {
   try {
+    console.log('getUserInfo called with user:', req.user);
+    
     const userId = req.user.id;
+    const userRole = req.user.role;
+    
+    console.log('User ID:', userId, 'Role:', userRole);
+    
+    // Handle admin users differently since they don't exist in the user collection
+    if (userRole === 'admin') {
+      console.log('Processing admin user');
+      return res.json({ 
+        success: true, 
+        user: {
+          name: 'Admin',
+          email: req.user.email,
+          role: 'admin'
+        }
+      });
+    }
+    
+    // For regular users, fetch from database
+    console.log('Processing regular user, fetching from database');
     const user = await userModel.findById(userId).select('name email');
     if (!user) {
+      console.log('User not found in database');
       return res.json({ success: false, message: 'User not found' });
     }
+    console.log('User found:', user);
     res.json({ success: true, user });
   } catch (error) {
+    console.error('getUserInfo error:', error);
     res.json({ success: false, message: error.message });
   }
 };

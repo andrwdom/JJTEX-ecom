@@ -5,6 +5,7 @@ import { ShopContext } from '../context/ShopContext'
 import SearchBar from './SearchBar'
 import { useLoading } from '../context/LoadingContext'
 import { motion, AnimatePresence } from 'framer-motion'
+import ShoppingCartIcon from './ShoppingCartIcon'
 
 const Navbar = () => {
   const { getCartCount, navigate, token, setToken } = useContext(ShopContext)
@@ -93,7 +94,7 @@ const Navbar = () => {
               >
                 <Link to="/cart" className="p-2 hover:bg-purple-300/20 rounded-lg transition-colors">
                   <div className="relative">
-                    <img src={assets.cart_icon} className="w-5 h-5" alt="Cart" />
+                    <ShoppingCartIcon />
                     <AnimatePresence>
                       {getCartCount() > 0 && (
                         <motion.span
@@ -154,14 +155,7 @@ const Navbar = () => {
               >
                 <Link to="/cart" className="p-2 hover:bg-purple-300/20 rounded-lg transition-colors">
                   <div className="relative">
-                    <motion.img 
-                      src={assets.cart_icon} 
-                      className="w-5 h-5 group-hover:scale-110 group-active:scale-95 transition-transform duration-200" 
-                      alt="Cart"
-                      whileHover={{ scale: 1.12 }}
-                      whileTap={{ scale: 0.96 }}
-                      style={{ willChange: 'transform' }}
-                    />
+                    <ShoppingCartIcon />
                     <AnimatePresence>
                       {getCartCount() > 0 && (
                         <motion.span
