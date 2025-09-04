@@ -13,7 +13,7 @@ import StripeIcon from '../components/StripeIcon'
 
 const PlaceOrder = () => {
     const [method, setMethod] = useState('');
-    const { navigate, backendUrl, token, cartItems, setCartItems, getCartAmount, delivery_fee, products } = useContext(ShopContext);
+    const { navigate, backendUrl, token, cartItems, setCartItems, getCartAmount, delivery_fee, products, user } = useContext(ShopContext);
     const [formData, setFormData] = useState({
         firstName: '',
         lastName: '',
@@ -75,6 +75,7 @@ const PlaceOrder = () => {
             }
 
             let orderData = {
+                userId: user?._id,
                 address: formData,
                 items: itemsArray,
                 amount: getCartAmount() + delivery_fee

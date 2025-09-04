@@ -228,7 +228,8 @@ const ShopContextProvider = (props) => {
         backendUrl,
         setToken,
         token,
-        isLoading
+        isLoading,
+        user
     };
 
     return (
