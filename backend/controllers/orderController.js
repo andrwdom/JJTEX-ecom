@@ -106,7 +106,9 @@ const placeOrder = async (req,res) => {
     try {
         const { userId, items, amount, address} = req.body;
 
-        console.log('COD order request:', { userId, items: items.length, amount });
+        console.log('COD order request - Full body:', req.body);
+        console.log('COD order request - userId type:', typeof userId, 'value:', userId);
+        console.log('COD order request:', { userId, items: items?.length, amount });
 
         // Update product stock
         console.log('Updating stock for COD order...');
@@ -143,7 +145,9 @@ const placeOrderPhonePe = async (req, res) => {
         const { userId, items, amount, address } = req.body;
         const { origin } = req.headers;
 
-        console.log('PhonePe order request:', { userId, items: items.length, amount, origin });
+        console.log('PhonePe order request - Full body:', req.body);
+        console.log('PhonePe order request - userId type:', typeof userId, 'value:', userId);
+        console.log('PhonePe order request:', { userId, items: items?.length, amount, origin });
 
         // Check stock availability without reducing it
         console.log('Checking stock availability for PhonePe order...');

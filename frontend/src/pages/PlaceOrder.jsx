@@ -76,13 +76,22 @@ const PlaceOrder = () => {
 
             // Get userId from user object or extract from JWT token as fallback
             let userId = user?._id;
+            console.log('Debug - user object:', user);
+            console.log('Debug - userId from user object:', userId);
+            console.log('Debug - token:', token ? 'present' : 'missing');
+            
             if (!userId && token) {
                 try {
-                    userId = JSON.parse(atob(token.split('.')[1])).id;
+                    const tokenPayload = JSON.parse(atob(token.split('.')[1]));
+                    console.log('Debug - token payload:', tokenPayload);
+                    userId = tokenPayload.id;
+                    console.log('Debug - userId from token:', userId);
                 } catch (error) {
                     console.error('Error extracting userId from token:', error);
                 }
             }
+
+            console.log('Debug - final userId:', userId);
 
             if (!userId) {
                 toast.error('User ID not found. Please login again.');
