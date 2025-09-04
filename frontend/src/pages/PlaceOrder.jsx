@@ -74,8 +74,24 @@ const PlaceOrder = () => {
                 }
             }
 
+            // Get userId from user object or extract from JWT token as fallback
+            let userId = user?._id;
+            if (!userId && token) {
+                try {
+                    userId = JSON.parse(atob(token.split('.')[1])).id;
+                } catch (error) {
+                    console.error('Error extracting userId from token:', error);
+                }
+            }
+
+            if (!userId) {
+                toast.error('User ID not found. Please login again.');
+                navigate('/login');
+                return;
+            }
+
             let orderData = {
-                userId: user?._id,
+                userId: userId,
                 address: formData,
                 items: itemsArray,
                 amount: getCartAmount() + delivery_fee
