@@ -54,9 +54,29 @@ const PlaceOrder = () => {
     const onSubmitHandler = async (event) => {
         event.preventDefault();
         try {
+            // Convert cartItems object to array format expected by backend
+            const itemsArray = [];
+            for (const productId in cartItems) {
+                for (const size in cartItems[productId]) {
+                    const quantity = cartItems[productId][size];
+                    if (quantity > 0) {
+                        const product = products.find(p => p._id === productId);
+                        if (product) {
+                            itemsArray.push({
+                                _id: productId,
+                                name: product.name,
+                                size: size,
+                                quantity: quantity,
+                                price: product.price
+                            });
+                        }
+                    }
+                }
+            }
+
             let orderData = {
                 address: formData,
-                items: cartItems,
+                items: itemsArray,
                 amount: getCartAmount() + delivery_fee
             }
 
