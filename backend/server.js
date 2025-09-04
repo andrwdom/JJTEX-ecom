@@ -104,14 +104,28 @@ app.use((req, res, next) => {
 });
 
 // CORS configuration
+const allowedOrigins = [
+    'https://www.jjtextiles.com',
+    'https://jjtextiles.com',
+    'https://admin.jjtextiles.com', // if you have admin subdomain
+    'http://localhost:3000', // for development
+    'http://localhost:5173'  // for Vite dev server
+];
+
 const corsOptions = {
-    origin: [
-        'https://www.jjtextiles.com',
-        'https://jjtextiles.com',
-        'https://admin.jjtextiles.com', // if you have admin subdomain
-        'http://localhost:3000', // for development
-        'http://localhost:5173'  // for Vite dev server
-    ],
+    origin: function (origin, callback) {
+        // Allow requests with no origin (like mobile apps or curl requests)
+        if (!origin) return callback(null, true);
+        
+        console.log('CORS Request from origin:', origin);
+        
+        if (allowedOrigins.indexOf(origin) !== -1) {
+            callback(null, true);
+        } else {
+            console.error('CORS Error: Origin not allowed:', origin);
+            callback(new Error('Not allowed by CORS'));
+        }
+    },
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization', 'token']
