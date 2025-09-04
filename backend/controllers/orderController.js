@@ -809,4 +809,22 @@ const getOrderStats = async (req, res) => {
     }
 };
 
-export {verifyRazorpay, verifyStripe, verifyPhonePe, placeOrder, placeOrderRazorpay, placeOrderPhonePe, allOrders, userOrders, updateStatus, cancelOrder, getUserOrders, getAllOrders, checkPhonePeStatus, refundPhonePe, getOrderStats}
+const placeOrderStripe = async (req, res) => {
+    try {
+        res.json({ 
+            success: false, 
+            message: "Stripe payment integration not implemented yet" 
+        });
+    } catch (error) {
+        console.log(error);
+        res.json({ success: false, message: error.message });
+    }
+}
+
+export {verifyRazorpay, verifyStripe, verifyPhonePe, placeOrder, placeOrderRazorpay, placeOrderPhonePe, allOrders, userOrders, updateStatus, cancelOrder, getUserOrders, getAllOrders, checkPhonePeStatus, refundPhonePe, getOrderStats, placeOrderStripe}
+
+
+
+
+
+

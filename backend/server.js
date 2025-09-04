@@ -104,68 +104,20 @@ app.use((req, res, next) => {
 });
 
 // CORS configuration
-const allowedOrigins = [
-    'https://admin.jjtextiles.com',
-    'https://www.jjtextiles.com',
-    'https://jjtextiles.com',
-    'http://localhost:5173',
-    'http://localhost:3000',
-    'http://localhost:5174' // Added admin panel dev server port
-];
-
 const corsOptions = {
-    origin: function (origin, callback) {
-        // Allow requests with no origin (like mobile apps or curl requests)
-        if (!origin) {
-            return callback(null, true);
-        }
-        
-        if (allowedOrigins.indexOf(origin) !== -1) {
-            callback(null, true);
-        } else {
-            callback(new Error('Not allowed by CORS'));
-        }
-    },
+    origin: [
+        'https://www.jjtextiles.com',
+        'https://jjtextiles.com',
+        'https://admin.jjtextiles.com', // if you have admin subdomain
+        'http://localhost:3000', // for development
+        'http://localhost:5173'  // for Vite dev server
+    ],
     credentials: true,
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-    allowedHeaders: [
-        'Content-Type', 
-        'Authorization', 
-        'token', 
-        'x-requested-with', 
-        'Accept', 
-        'Origin', 
-        'X-Requested-With',
-        'Access-Control-Allow-Origin',
-        'Access-Control-Allow-Headers',
-        'Access-Control-Allow-Methods'
-    ],
-    exposedHeaders: [
-        'Content-Range', 
-        'X-Content-Range',
-        'Access-Control-Allow-Origin',
-        'Access-Control-Allow-Credentials'
-    ],
-    preflightContinue: false,
-    optionsSuccessStatus: 204,
-    maxAge: 86400 // 24 hours
-}
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'token']
+};
 
-// Debug middleware for CORS and rate limiting
-app.use((req, res, next) => {
-    console.log('Request Details:', {
-        origin: req.headers.origin,
-        method: req.method,
-        url: req.url,
-        headers: req.headers,
-        ip: req.ip,
-        timestamp: new Date().toISOString()
-    });
-    next();
-});
-
-// Apply CORS to all routes before other middleware
-app.use(cors(corsOptions));
+app.use(cors(corsOptions)); // Apply CORS to all routes before other middleware
 
 // Handle preflight requests
 app.options('*', cors(corsOptions));

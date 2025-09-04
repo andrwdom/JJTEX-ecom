@@ -14,7 +14,7 @@ orderRouter.get('/stats',adminAuth,getOrderStats)
 // User Features
 orderRouter.post('/userorders',verifyToken,userOrders)
 orderRouter.post('/place',verifyToken,placeOrder)
-orderRouter.post('/place-phonepe',verifyToken,placeOrderPhonePe)
+orderRouter.post('/phonepe',verifyToken,placeOrderPhonePe)
 orderRouter.post('/verify-phonepe',verifyPhonePe)
 orderRouter.post('/verifyStripe',verifyToken,verifyStripe)
 orderRouter.post('/verifyRazorpay',verifyToken,verifyRazorpay)
@@ -26,3 +26,5 @@ orderRouter.post('/refund-callback-phonepe', (req, res) => {
 orderRouter.post('/cancel',verifyToken,cancelOrder)
 
 export default orderRouter
+
+

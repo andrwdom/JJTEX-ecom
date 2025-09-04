@@ -52,107 +52,73 @@ const PlaceOrder = () => {
     }
 
     const onSubmitHandler = async (event) => {
-        event.preventDefault()
-
-        // Validate all fields before submission
-        const requiredFields = Object.entries(formData);
-        const emptyFields = requiredFields.filter(([key, value]) => !value);
-        
-        if (emptyFields.length > 0) {
-            toast.error('Please fill in all required fields');
-            return;
-        }
-
-        if (!method) {
-            toast.error('Please select a payment method');
-            return;
-        }
-
+        event.preventDefault();
         try {
-            let orderItems = []
-
-            for (const items in cartItems) {
-                for (const item in cartItems[items]) {
-                    if (cartItems[items][item] > 0) {
-                        const itemInfo = structuredClone(products.find((product) => product._id === items))
-                        if (itemInfo) {
-                            itemInfo.size = item
-                            itemInfo.quantity = cartItems[items][item]
-                            orderItems.push(itemInfo)
-                        }
-                    }
-                }
-            }
-
-            const orderData = {
+            let orderData = {
                 address: formData,
-                items: orderItems,
-                amount: getCartAmount() - (getCartAmount() * discount / 100) + delivery_fee,
-                userId: JSON.parse(atob(token.split('.')[1])).id
+                items: cartItems,
+                amount: getCartAmount() + delivery_fee
             }
 
-            if (method === 'cod') {
-                try {
-                    const response = await axios.post(backendUrl + '/api/order/place', orderData, { headers: { token } })
+            let response;
+
+            switch (method) {
+                case 'cod':
+                    response = await axios.post(backendUrl + '/api/order/place', orderData, {headers: {token}});
+                    break;
+                
+                case 'phonepe':
+                    response = await axios.post(backendUrl + '/api/order/phonepe', orderData, {headers: {token}});
                     if (response.data.success) {
-                        navigate('/orders')
-                        setCartItems({})
-                        toast.success('Order placed successfully!')
-                    } else {
-                        toast.error(response.data.message || 'Failed to place order')
+                        window.location.href = response.data.session_url;
                     }
-                } catch (error) {
-                    console.log(error)
-                    toast.error(error.response?.data?.message || 'Failed to place order')
-                }
-            }
-            else if (method === 'phonepe') {
-                try {
-                    const responsePhonePe = await axios.post(backendUrl + '/api/order/place-phonepe', orderData, { headers: { token } })
-                    if (responsePhonePe.data.success) {
-                        window.location.href = responsePhonePe.data.session_url;
-                    } else {
-                        toast.error(responsePhonePe.data.message || 'Failed to initialize payment')
+                    break;
+                
+                case 'razorpay':
+                    try {
+                        const responseRazorpay = await axios.post(backendUrl + '/api/order/place-razorpay', orderData, { headers: { token } })
+                        if (responseRazorpay.data.success) {
+                            // Handle Razorpay payment flow
+                            toast.success('Razorpay payment initialized!')
+                            // You can add Razorpay payment handling here
+                        } else {
+                            toast.error(responseRazorpay.data.message || 'Failed to initialize Razorpay payment')
+                        }
+                    } catch (error) {
+                        console.log(error)
+                        toast.error(error.response?.data?.message || 'Failed to initialize Razorpay payment')
                     }
-                } catch (error) {
-                    console.log(error)
-                    toast.error(error.response?.data?.message || 'Failed to initialize payment')
-                }
-            }
-            else if (method === 'razorpay') {
-                try {
-                    const responseRazorpay = await axios.post(backendUrl + '/api/order/place-razorpay', orderData, { headers: { token } })
-                    if (responseRazorpay.data.success) {
-                        // Handle Razorpay payment flow
-                        toast.success('Razorpay payment initialized!')
-                        // You can add Razorpay payment handling here
-                    } else {
-                        toast.error(responseRazorpay.data.message || 'Failed to initialize Razorpay payment')
+                    break;
+                
+                case 'stripe':
+                    try {
+                        const responseStripe = await axios.post(backendUrl + '/api/order/place-stripe', orderData, { headers: { token } })
+                        if (responseStripe.data.success) {
+                            // Handle Stripe payment flow
+                            toast.success('Stripe payment initialized!')
+                            // You can add Stripe payment handling here
+                        } else {
+                            toast.error(responseStripe.data.message || 'Failed to initialize Stripe payment')
+                        }
+                    } catch (error) {
+                        console.log(error)
+                        toast.error(error.response?.data?.message || 'Failed to initialize Stripe payment')
                     }
-                } catch (error) {
-                    console.log(error)
-                    toast.error(error.response?.data?.message || 'Failed to initialize Razorpay payment')
-                }
-            }
-            else if (method === 'stripe') {
-                try {
-                    const responseStripe = await axios.post(backendUrl + '/api/order/place-stripe', orderData, { headers: { token } })
-                    if (responseStripe.data.success) {
-                        // Handle Stripe payment flow
-                        toast.success('Stripe payment initialized!')
-                        // You can add Stripe payment handling here
-                    } else {
-                        toast.error(responseStripe.data.message || 'Failed to initialize Stripe payment')
-                    }
-                } catch (error) {
-                    console.log(error)
-                    toast.error(error.response?.data?.message || 'Failed to initialize Stripe payment')
-                }
+                    break;
+                
+                default:
+                    break;
             }
 
+            if (response && response.data.success) {
+                setCartItems({});
+                navigate('/orders');
+            } else if (response && !response.data.success) {
+                toast.error(response.data.message);
+            }
         } catch (error) {
-            console.log(error)
-            toast.error(error.message || 'Something went wrong')
+            console.log(error);
+            toast.error(error.message);
         }
     }
 
@@ -328,3 +294,8 @@ const PlaceOrder = () => {
 }
 
 export default PlaceOrder
+
+
+
+
+

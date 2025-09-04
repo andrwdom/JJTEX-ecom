@@ -37,7 +37,20 @@ sudo mkdir -p /var/www/jjtextiles/backend/logs
 echo "Deploying backend..."
 cd backend
 npm install --production
-pm2 start ecosystem.config.js
+
+# Check if .env file exists, if not create from example
+if [ ! -f .env ]; then
+    echo "Creating .env file from template..."
+    cp .env.example .env 2>/dev/null || echo "Please create .env file manually"
+fi
+
+# Stop existing PM2 processes
+pm2 stop jjtex-backend 2>/dev/null || true
+pm2 delete jjtex-backend 2>/dev/null || true
+
+# Start backend with PM2 (simple approach)
+pm2 start server.js --name jjtex-backend --env production
+pm2 startup
 pm2 save
 
 # Deploy frontend
@@ -60,10 +73,13 @@ sudo cp ../deployment/nginx.conf /etc/nginx/sites-available/jjtextiles
 sudo ln -sf /etc/nginx/sites-available/jjtextiles /etc/nginx/sites-enabled/
 sudo rm -f /etc/nginx/sites-enabled/default
 
+# Test nginx configuration
+sudo nginx -t
+
 # Install and configure SSL
 echo "Installing SSL certificates..."
 sudo apt install certbot python3-certbot-nginx -y
-sudo certbot --nginx -d jjtextiles.com -d www.jjtextiles.com -d api.jjtextiles.com -d admin.jjtextiles.com
+sudo certbot --nginx -d jjtextiles.com -d www.jjtextiles.com -d api.jjtextiles.com -d admin.jjtextiles.com --non-interactive --agree-tos --email your-email@example.com
 
 # Configure firewall
 echo "Configuring firewall..."
@@ -71,9 +87,19 @@ sudo ufw allow 'Nginx Full'
 sudo ufw allow OpenSSH
 sudo ufw --force enable
 
+# Set proper permissions
+echo "Setting permissions..."
+sudo chown -R www-data:www-data /var/www/jjtextiles
+sudo chmod -R 755 /var/www/jjtextiles
+
 # Restart services
 echo "Restarting services..."
 sudo systemctl restart nginx
 pm2 restart all
 
-echo "Deployment completed successfully!" 
+# Show status
+echo "Deployment completed successfully!"
+echo "PM2 Status:"
+pm2 status
+echo "Nginx Status:"
+sudo systemctl status nginx --no-pager 
