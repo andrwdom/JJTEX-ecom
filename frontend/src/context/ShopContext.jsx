@@ -3,6 +3,8 @@ import { toast } from "react-toastify";
 import { useNavigate } from "react-router-dom";
 import axios from 'axios'
 import { useAuth } from './AuthContext';
+import { getApiEndpoint, useLegacyEndpoints } from '../config/api.config.js';
+import apiService from '../services/apiService.js';
 
 export const ShopContext = createContext();
 
@@ -80,12 +82,15 @@ const ShopContextProvider = (props) => {
 
         try {
             setIsLoading(true);
-            await axios.post(backendUrl + '/api/cart/add', { userId: user?._id, itemId, size });
+            
+            // Use new API service
+            await apiService.addToCart(user?._id, itemId, size, 1);
             toast.success('Added to cart successfully');
             await getUserCart(); // Refresh cart from backend
         } catch (error) {
             console.error('Error adding to cart:', error);
-            toast.error(error.response?.data?.message || 'Failed to add to cart');
+            const errorInfo = apiService.handleError(error);
+            toast.error(errorInfo.message || 'Failed to add to cart');
             // Revert cart data on error
             setCartItems(cartItems);
         } finally {
@@ -157,15 +162,19 @@ const ShopContextProvider = (props) => {
     const getProductsData = async () => {
         try {
             setIsLoading(true);
-            const response = await axios.get(backendUrl + '/api/product/list');
-            if (response.data.success) {
-                setProducts(response.data.products.reverse());
+            
+            // Use new API service
+            const response = await apiService.getProducts();
+            
+            if (response.success) {
+                setProducts(Array.isArray(response.data) ? response.data.reverse() : []);
             } else {
-                toast.error(response.data.message);
+                toast.error(response.message);
             }
         } catch (error) {
             console.error('Error fetching products:', error);
-            toast.error(error.response?.data?.message || 'Failed to fetch products');
+            const errorInfo = apiService.handleError(error);
+            toast.error(errorInfo.message || 'Failed to fetch products');
         } finally {
             setIsLoading(false);
         }
@@ -176,18 +185,23 @@ const ShopContextProvider = (props) => {
         
         try {
             setIsLoading(true);
-            const response = await axios.post(backendUrl + '/api/cart/get', { userId: user?._id });
-            if (response.data.success) {
-                setCartItems(response.data.cartData);
+            
+            // Use new API service
+            const response = await apiService.getCart(user?._id);
+            
+            if (response.success) {
+                setCartItems(response.cartData || {});
             }
         } catch (error) {
             console.error('Error fetching cart:', error);
-            if (error.response?.status === 401) {
+            const errorInfo = apiService.handleError(error);
+            
+            if (errorInfo.status === 401) {
                 localStorage.removeItem('token');
                 setToken('');
                 setCartItems({});
             } else {
-                toast.error(error.response?.data?.message || 'Failed to fetch cart');
+                toast.error(errorInfo.message || 'Failed to fetch cart');
             }
         } finally {
             setIsLoading(false);
