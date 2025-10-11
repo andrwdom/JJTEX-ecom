@@ -975,3 +975,297 @@ export const moveProduct = async (req, res) => {
     res.status(500).json({ success: false, message: error.message });
   }
 };
+
+// =====================================================================================
+// ADD PRODUCT - Handle product creation with image uploads
+// =====================================================================================
+
+/**
+ * POST /api/products - Add new product with image uploads
+ * Handles FormData with multiple images and saves to VPS upload folder
+ */
+export const addProduct = async (req, res) => {
+  try {
+    console.log('🔧 DEBUG: addProduct called');
+    console.log('🔧 DEBUG: Request body:', req.body);
+    console.log('🔧 DEBUG: Request files:', req.files);
+    
+    // Extract form data
+    const {
+      customId,
+      name,
+      description,
+      price,
+      category,
+      categorySlug,
+      bestseller,
+      sizes,
+      availableSizes,
+      sleeveType
+    } = req.body;
+    
+    // Validate required fields
+    if (!customId || !name || !description || !price || !category) {
+      return res.status(400).json({
+        success: false,
+        message: 'Missing required fields: customId, name, description, price, category'
+      });
+    }
+    
+    // Check if product with same customId already exists
+    const existingProduct = await productModel.findOne({ customId });
+    if (existingProduct) {
+      return res.status(400).json({
+        success: false,
+        message: 'Product with this ID already exists'
+      });
+    }
+    
+    // Process uploaded images
+    const images = [];
+    const uploadDir = process.env.UPLOAD_DIR || '/var/www/jjtex-ecom/uploads';
+    const productUploadDir = path.join(uploadDir, 'products');
+    
+    // Ensure upload directory exists
+    if (!fs.existsSync(productUploadDir)) {
+      fs.mkdirSync(productUploadDir, { recursive: true });
+    }
+    
+    // Process each uploaded image
+    const imageFields = ['image1', 'image2', 'image3', 'image4'];
+    for (const field of imageFields) {
+      if (req.files && req.files[field] && req.files[field][0]) {
+        const file = req.files[field][0];
+        console.log(`🔧 DEBUG: Processing ${field}:`, file.originalname);
+        
+        // Generate unique filename
+        const fileExtension = path.extname(file.originalname);
+        const fileName = `${customId}_${field}_${Date.now()}${fileExtension}`;
+        const filePath = path.join(productUploadDir, fileName);
+        
+        // Save file to VPS upload folder
+        fs.writeFileSync(filePath, file.buffer);
+        console.log(`🔧 DEBUG: Saved ${field} to:`, filePath);
+        
+        // Generate URL for the saved image
+        const imageUrl = `${process.env.BASE_URL || 'https://jjtextiles.com'}/uploads/products/${fileName}`;
+        images.push(imageUrl);
+      }
+    }
+    
+    // Parse sizes and availableSizes
+    let parsedSizes = [];
+    let parsedAvailableSizes = [];
+    
+    try {
+      parsedSizes = JSON.parse(sizes || '[]');
+      parsedAvailableSizes = JSON.parse(availableSizes || '[]');
+    } catch (error) {
+      console.error('Error parsing sizes:', error);
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid sizes format'
+      });
+    }
+    
+    // Create new product
+    const newProduct = new productModel({
+      customId,
+      name,
+      description,
+      price: Number(price),
+      category,
+      categorySlug: categorySlug || category.toLowerCase().replace(/\s+/g, '-'),
+      bestseller: bestseller === 'true',
+      sizes: parsedSizes,
+      availableSizes: parsedAvailableSizes,
+      images,
+      sleeveType: sleeveType || undefined,
+      createdAt: new Date(),
+      updatedAt: new Date()
+    });
+    
+    // Save to database
+    const savedProduct = await newProduct.save();
+    console.log('🔧 DEBUG: Product saved successfully:', savedProduct.customId);
+    
+    res.status(201).json({
+      success: true,
+      message: 'Product added successfully',
+      product: savedProduct
+    });
+    
+  } catch (error) {
+    console.error('Add product error:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message || 'Failed to add product'
+    });
+  }
+};
+
+// =====================================================================================
+// UPDATE PRODUCT - Handle product updates with image uploads
+// =====================================================================================
+
+/**
+ * PUT /api/products/:id - Update existing product with image uploads
+ * Handles FormData with multiple images and saves to VPS upload folder
+ */
+export const updateProduct = async (req, res) => {
+  try {
+    console.log('🔧 DEBUG: updateProduct called for ID:', req.params.id);
+    console.log('🔧 DEBUG: Request body:', req.body);
+    console.log('🔧 DEBUG: Request files:', req.files);
+    
+    const productId = req.params.id;
+    
+    // Find existing product
+    let product = await productModel.findById(productId);
+    if (!product) {
+      return res.status(404).json({
+        success: false,
+        message: 'Product not found'
+      });
+    }
+    
+    // Extract form data
+    const {
+      customId,
+      name,
+      description,
+      price,
+      category,
+      categorySlug,
+      bestseller,
+      sizes,
+      availableSizes,
+      sleeveType
+    } = req.body;
+    
+    // Update product fields
+    if (customId) product.customId = customId;
+    if (name) product.name = name;
+    if (description) product.description = description;
+    if (price) product.price = Number(price);
+    if (category) product.category = category;
+    if (categorySlug) product.categorySlug = categorySlug;
+    if (bestseller !== undefined) product.bestseller = bestseller === 'true';
+    if (sizes) {
+      try {
+        product.sizes = JSON.parse(sizes);
+      } catch (error) {
+        return res.status(400).json({
+          success: false,
+          message: 'Invalid sizes format'
+        });
+      }
+    }
+    if (availableSizes) {
+      try {
+        product.availableSizes = JSON.parse(availableSizes);
+      } catch (error) {
+        return res.status(400).json({
+          success: false,
+          message: 'Invalid availableSizes format'
+        });
+      }
+    }
+    if (sleeveType !== undefined) product.sleeveType = sleeveType;
+    
+    // Process uploaded images if any
+    const uploadDir = process.env.UPLOAD_DIR || '/var/www/jjtex-ecom/uploads';
+    const productUploadDir = path.join(uploadDir, 'products');
+    
+    // Ensure upload directory exists
+    if (!fs.existsSync(productUploadDir)) {
+      fs.mkdirSync(productUploadDir, { recursive: true });
+    }
+    
+    // Process each uploaded image
+    const imageFields = ['image1', 'image2', 'image3', 'image4'];
+    for (const field of imageFields) {
+      if (req.files && req.files[field] && req.files[field][0]) {
+        const file = req.files[field][0];
+        console.log(`🔧 DEBUG: Processing ${field}:`, file.originalname);
+        
+        // Generate unique filename
+        const fileExtension = path.extname(file.originalname);
+        const fileName = `${product.customId}_${field}_${Date.now()}${fileExtension}`;
+        const filePath = path.join(productUploadDir, fileName);
+        
+        // Save file to VPS upload folder
+        fs.writeFileSync(filePath, file.buffer);
+        console.log(`🔧 DEBUG: Saved ${field} to:`, filePath);
+        
+        // Generate URL for the saved image
+        const imageUrl = `${process.env.BASE_URL || 'https://jjtextiles.com'}/uploads/products/${fileName}`;
+        
+        // Update the corresponding image in the product
+        const imageIndex = parseInt(field.replace('image', '')) - 1;
+        if (!product.images) product.images = [];
+        product.images[imageIndex] = imageUrl;
+      }
+    }
+    
+    // Update timestamp
+    product.updatedAt = new Date();
+    
+    // Save updated product
+    const updatedProduct = await product.save();
+    console.log('🔧 DEBUG: Product updated successfully:', updatedProduct.customId);
+    
+    res.status(200).json({
+      success: true,
+      message: 'Product updated successfully',
+      product: updatedProduct
+    });
+    
+  } catch (error) {
+    console.error('Update product error:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message || 'Failed to update product'
+    });
+  }
+};
+
+// =====================================================================================
+// REMOVE PRODUCT - Handle product deletion
+// =====================================================================================
+
+/**
+ * DELETE /api/products/:id - Remove product by ID
+ */
+export const removeProduct = async (req, res) => {
+  try {
+    console.log('🔧 DEBUG: removeProduct called for ID:', req.params.id);
+    
+    const productId = req.params.id;
+    
+    // Find and delete product
+    const deletedProduct = await productModel.findByIdAndDelete(productId);
+    
+    if (!deletedProduct) {
+      return res.status(404).json({
+        success: false,
+        message: 'Product not found'
+      });
+    }
+    
+    console.log('🔧 DEBUG: Product deleted successfully:', deletedProduct.customId);
+    
+    res.status(200).json({
+      success: true,
+      message: 'Product deleted successfully',
+      product: deletedProduct
+    });
+    
+  } catch (error) {
+    console.error('Remove product error:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message || 'Failed to remove product'
+    });
+  }
+};
