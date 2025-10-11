@@ -6,7 +6,7 @@ import { StandardCheckoutClient, Env, StandardCheckoutPayRequest } from 'pg-sdk-
 import { randomUUID } from 'crypto';
 import mongoose from 'mongoose';
 import Logger from '../utils/logger.js';
-import { reserveStock, releaseStock, checkStockAvailability } from './stockController.js.disabled';
+// 🔧 JJTEX: Removed import from disabled stockController - using local implementations instead
 
 // Global variables matching old backend
 const currency = 'inr';
