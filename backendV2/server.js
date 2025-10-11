@@ -21,7 +21,16 @@ let Sentry = null;
 // Import new production-grade systems
 import { expressErrorHandler } from './utils/errorHandler.js';
 import { startPeriodicMonitoring } from './utils/monitoringSystem.js';
-import * as SentryNode from '@sentry/node';
+
+// 🔧 JJTEX: Make Sentry optional - only import if installed
+let SentryNode = null;
+try {
+  const sentryModule = await import('@sentry/node');
+  SentryNode = sentryModule;
+  console.log('✅ Sentry monitoring enabled');
+} catch (error) {
+  console.log('⚠️  Sentry not installed - monitoring disabled (optional)');
+}
 
 // Now import config (which also loads dotenv but won't conflict)
 import { config } from './config.js'
@@ -168,8 +177,8 @@ app.use(rawWebhookRouter);
 
 // Webhook handling is done via payment routes at /api/payment/phonepe/webhook
 
-// Initialize Sentry properly
-if (process.env.NODE_ENV === 'production' && process.env.SENTRY_DSN) {
+// Initialize Sentry properly (only if available)
+if (SentryNode && process.env.NODE_ENV === 'production' && process.env.SENTRY_DSN) {
   SentryNode.init({
     dsn: process.env.SENTRY_DSN,
     environment: process.env.NODE_ENV || 'production'
@@ -657,8 +666,8 @@ app.use((err, req, res, next) => {
     }
 });
 
-// Add Sentry error handler (non-intrusive - only in production)
-if (process.env.NODE_ENV === 'production' && process.env.SENTRY_DSN) {
+// Add Sentry error handler (non-intrusive - only in production and if available)
+if (Sentry && process.env.NODE_ENV === 'production' && process.env.SENTRY_DSN) {
   app.use(Sentry.errorHandler());
 }
 
@@ -698,22 +707,13 @@ try {
   console.log('Server will continue without Firebase Admin SDK');
 }
 
-// Initialize Sentry dynamically
+// Initialize Sentry dynamically (now handled at the top of the file)
 async function initializeSentry() {
-  try {
-    const sentryModule = await import('@sentry/node');
-    Sentry = sentryModule;
-    
-    if (process.env.NODE_ENV === 'production' && process.env.SENTRY_DSN) {
-      Sentry.init({
-        dsn: process.env.SENTRY_DSN,
-        tracesSampleRate: 0.1,
-        debug: false,
-      });
-      console.log('✅ Sentry initialized for error monitoring');
-    }
-  } catch (err) {
-    console.log('⚠️ Sentry not available, error monitoring disabled');
+  // Already initialized at the top with dynamic import
+  if (SentryNode && process.env.NODE_ENV === 'production' && process.env.SENTRY_DSN) {
+    console.log('✅ Sentry initialized for error monitoring');
+  } else {
+    console.log('⚠️ Sentry not available or not configured');
   }
 }
 
