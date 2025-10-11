@@ -87,7 +87,7 @@ const Cart = () => {
                           <div className="sm:w-32 sm:h-32 w-full h-48 sm:h-auto">
                             <img 
                               className="w-full h-full object-cover" 
-                              src={productData.image[0]} 
+                              src={productData.images?.[0]} 
                               alt={productData.name}
                               onError={(e) => {
                                 e.target.src = 'https://via.placeholder.com/300x300?text=Image+Not+Found';

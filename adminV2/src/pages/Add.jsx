@@ -48,6 +48,26 @@ const Add = ({token}) => {
      return categories[category].subcategories[subcategory].items;
    };
 
+   // 🔧 JJTEX: Update subcategory when category changes
+   useEffect(() => {
+     const subcategories = getSubcategories();
+     if (subcategories.length > 0) {
+       setSubcategory(subcategories[0]);
+     } else {
+       setSubcategory("");
+     }
+   }, [category]);
+
+   // 🔧 JJTEX: Update item type when subcategory changes
+   useEffect(() => {
+     const types = getItemTypes();
+     if (types.length > 0) {
+       setItemType(types[0]);
+     } else {
+       setItemType("");
+     }
+   }, [subcategory]);
+
    const SLEEVE_TYPE_OPTIONS = ["Puff Sleeve", "Normal Sleeve"];
 
    const [loading, setLoading] = useState(false)
@@ -253,6 +273,22 @@ const Add = ({token}) => {
       return;
     }
 
+    // Validate category and subcategory
+    if (!category) {
+      toast.error("Please select a category");
+      return;
+    }
+
+    if (!subcategory) {
+      toast.error("Please select a subcategory");
+      return;
+    }
+
+    if (!itemType) {
+      toast.error("Please select an item type");
+      return;
+    }
+
     setLoading(true);
     setUploadProgress(0);
     try {
@@ -263,6 +299,8 @@ const Add = ({token}) => {
       formData.append("price", Number(price))
       formData.append("category", category); // display name
       formData.append("categorySlug", getCategorySlug(category)); // correct slug
+      formData.append("subCategory", subcategory)
+      formData.append("type", itemType)
       formData.append("bestseller", bestseller.toString())
       formData.append("sizes", JSON.stringify(sizesWithStock))
       formData.append("availableSizes", JSON.stringify(sizesWithStock.map(s => s.size)))
@@ -284,6 +322,8 @@ const Add = ({token}) => {
       console.log('price:', price);
       console.log('category:', category);
       console.log('categorySlug:', getCategorySlug(category));
+      console.log('subCategory:', subcategory);
+      console.log('type:', itemType);
       console.log('bestseller:', bestseller);
       console.log('sizes:', sizesWithStock);
       console.log('availableSizes:', sizesWithStock.map(s => s.size));
@@ -421,16 +461,51 @@ const Add = ({token}) => {
           <textarea onChange={(e)=>setDescription(e.target.value)} value={description} className='w-full max-w-[500px] px-3 py-2' type="text" placeholder='Write content here' required/>
         </div>
 
-        <div className='grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 w-full'>
+        <div className='grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 w-full'>
           <div>
             <p className='mb-2'>Category</p>
-            <select onChange={(e) => setCategory(e.target.value)} className='w-full px-3 py-2' required>
+            <select onChange={(e) => setCategory(e.target.value)} value={category} className='w-full px-3 py-2' required>
               <option value="">Select a Category</option>
               {Object.keys(categories).map(categoryKey => (
                 <option key={categoryKey} value={categoryKey}>{categories[categoryKey].name}</option>
               ))}
             </select>
           </div>
+
+          <div>
+            <p className='mb-2'>Sub Category</p>
+            <select 
+              onChange={(e) => setSubcategory(e.target.value)} 
+              value={subcategory} 
+              className='w-full px-3 py-2' 
+              required
+              disabled={!category}
+            >
+              <option value="">Select a Sub Category</option>
+              {getSubcategories().map(sub => (
+                <option key={sub} value={sub}>{categories[category]?.subcategories[sub]?.name || sub}</option>
+              ))}
+            </select>
+          </div>
+
+          <div>
+            <p className='mb-2'>Item Type</p>
+            <select 
+              onChange={(e) => setItemType(e.target.value)} 
+              value={itemType} 
+              className='w-full px-3 py-2' 
+              required
+              disabled={!subcategory}
+            >
+              <option value="">Select an Item Type</option>
+              {getItemTypes().map(type => (
+                <option key={type} value={type}>{type}</option>
+              ))}
+            </select>
+          </div>
+        </div>
+
+        <div className='grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 gap-4 w-full'>
 
           {/* Sleeve Type Field - Only show for Lounge Wear categories */}
           {shouldShowSleeveType() && (

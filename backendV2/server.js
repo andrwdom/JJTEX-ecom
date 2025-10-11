@@ -106,9 +106,7 @@ app.set('trust proxy', 1)
 // SECURITY: Configure CORS for Production
 const allowedOrigins = process.env.NODE_ENV === 'production'
   ? [
-      'https://shithaa.in',
-      'https://www.shithaa.in',
-      'https://admin.shithaa.in',  // Admin panel
+      // Admin panel
       // JJTEX domains
       'https://jjtextiles.com',
       'https://www.jjtextiles.com',

@@ -240,7 +240,7 @@ const Orders = () => {
                   <div className='flex items-start gap-6'>
                     <img 
                       className='w-20 h-20 object-cover rounded-md' 
-                      src={item.image[0]} 
+                      src={item.images?.[0]} 
                       alt={item.name} 
                     />
                     <div className='space-y-2'>

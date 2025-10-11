@@ -152,7 +152,7 @@ const Product = () => {
       const response = await axios.post(backendUrl + '/api/product/single', { productId });
       if (response.data.success) {
         setProductData(response.data.product);
-        setImage(response.data.product.image[0]);
+        setImage(response.data.product.images?.[0]);
       } else {
         toast.error('Failed to fetch product details');
       }

@@ -140,10 +140,22 @@ const ProductCard = ({ product, onEdit, onDelete, isDragging, onDragStart, onDra
           {product.name}
         </h3>
 
-        {/* Category */}
-        <p className="text-xs text-gray-600 mb-3 bg-gray-50 px-2 py-1 rounded-md inline-block">
-          {product.category || 'Uncategorized'}
-        </p>
+        {/* Category & Subcategory */}
+        <div className="mb-3 space-y-1">
+          <p className="text-xs text-gray-600 bg-gray-50 px-2 py-1 rounded-md inline-block">
+            {product.category || 'Uncategorized'}
+          </p>
+          {product.subCategory && (
+            <p className="text-xs text-gray-500 bg-blue-50 px-2 py-1 rounded-md inline-block">
+              {product.subCategory}
+            </p>
+          )}
+          {product.type && (
+            <p className="text-xs text-gray-500 bg-green-50 px-2 py-1 rounded-md inline-block">
+              {product.type}
+            </p>
+          )}
+        </div>
 
         {/* Size & Stock Info */}
         <div className="flex flex-wrap gap-1 mb-3">
@@ -284,17 +296,29 @@ const ProductTableRow = ({ product, onEdit, onDelete, isDragging, onDragStart, o
       {/* Right Section: Details & Actions (60%) */}
       <td className="px-4 py-3 w-3/5">
         <div className="space-y-3">
-          {/* Line 1: Category, Price, and Sleeve Type */}
+          {/* Line 1: Category, Subcategory, Type, Price, and Sleeve Type */}
           <div className="flex items-center justify-between">
             <div className="flex-1">
               <div className="text-sm text-gray-900 font-medium">
-                {product.category}
+                {product.category || 'Uncategorized'}
               </div>
-              {product.sleeveType && (
-                <div className="text-xs text-gray-500 mt-1">
-                  {product.sleeveType}
-                </div>
-              )}
+              <div className="flex flex-wrap gap-1 mt-1">
+                {product.subCategory && (
+                  <span className="text-xs text-blue-600 bg-blue-50 px-2 py-1 rounded-full">
+                    {product.subCategory}
+                  </span>
+                )}
+                {product.type && (
+                  <span className="text-xs text-green-600 bg-green-50 px-2 py-1 rounded-full">
+                    {product.type}
+                  </span>
+                )}
+                {product.sleeveType && (
+                  <span className="text-xs text-gray-600 bg-gray-50 px-2 py-1 rounded-full">
+                    {product.sleeveType}
+                  </span>
+                )}
+              </div>
             </div>
             <div className="text-right">
               <div className="text-sm font-semibold text-gray-900">
@@ -434,13 +458,29 @@ const MobileProductCard = ({ product, onEdit, onDelete, onMoveTop, onMoveBottom,
       {isExpanded && (
         <div className="border-t border-gray-100 p-4 bg-gray-50">
           <div className="space-y-4">
-            {/* Category & Sleeve Type */}
+            {/* Category & Subcategory */}
             <div>
-              <h4 className="text-xs font-semibold text-gray-700 uppercase tracking-wide mb-2">Category</h4>
-              <div className="text-sm text-gray-900">{product.category}</div>
-              {product.sleeveType && (
-                <div className="text-xs text-gray-500 mt-1">{product.sleeveType}</div>
-              )}
+              <h4 className="text-xs font-semibold text-gray-700 uppercase tracking-wide mb-2">Category Details</h4>
+              <div className="space-y-2">
+                <div className="text-sm text-gray-900">{product.category || 'Uncategorized'}</div>
+                <div className="flex flex-wrap gap-1">
+                  {product.subCategory && (
+                    <span className="text-xs text-blue-600 bg-blue-50 px-2 py-1 rounded-full">
+                      {product.subCategory}
+                    </span>
+                  )}
+                  {product.type && (
+                    <span className="text-xs text-green-600 bg-green-50 px-2 py-1 rounded-full">
+                      {product.type}
+                    </span>
+                  )}
+                  {product.sleeveType && (
+                    <span className="text-xs text-gray-600 bg-gray-50 px-2 py-1 rounded-full">
+                      {product.sleeveType}
+                    </span>
+                  )}
+                </div>
+              </div>
             </div>
 
             {/* Stock by Size */}

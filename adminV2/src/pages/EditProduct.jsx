@@ -3,6 +3,7 @@ import { assets } from '../assets/assets'
 import axios from 'axios'
 import { backendUrl } from '../App'
 import { toast } from 'react-toastify'
+import { categories } from '../data/categories'
 
 const EditProduct = ({ product, token, onClose, onUpdate }) => {
   const [image1, setImage1] = useState(null)
@@ -12,7 +13,9 @@ const EditProduct = ({ product, token, onClose, onUpdate }) => {
   const [name, setName] = useState(product.name)
   const [description, setDescription] = useState(product.description)
   const [price, setPrice] = useState(product.price)
-  const [category, setCategory] = useState(product.category)
+  const [category, setCategory] = useState(product.category || "kids")
+  const [subcategory, setSubcategory] = useState(product.subCategory || "boys")
+  const [itemType, setItemType] = useState(product.type || "")
   const [bestseller, setBestseller] = useState(product.bestseller)
   const [loading, setLoading] = useState(false)
   const [stock, setStock] = useState(product.stock || 0)
@@ -33,25 +36,40 @@ const EditProduct = ({ product, token, onClose, onUpdate }) => {
     }
   }, [category]);
 
-  // Only the 4 required categories as specified
-  const CATEGORY_OPTIONS = [
-    "Maternity Feeding Wear",
-    "Zipless Feeding Lounge Wear",
-    "Non-Feeding Lounge Wear",
-    "Zipless Feeding Dupatta Lounge Wear"
-  ];
+  // 🔧 JJTEX: Get available subcategories based on selected category
+  const getSubcategories = () => {
+    if (!category || !categories[category]) return [];
+    return Object.keys(categories[category].subcategories);
+  };
+
+  // 🔧 JJTEX: Get available item types based on selected category and subcategory
+  const getItemTypes = () => {
+    if (!category || !subcategory || !categories[category]?.subcategories[subcategory]) return [];
+    return categories[category].subcategories[subcategory].items;
+  };
+
+  // 🔧 JJTEX: Update subcategory when category changes
+  useEffect(() => {
+    const subcategories = getSubcategories();
+    if (subcategories.length > 0 && !subcategories.includes(subcategory)) {
+      setSubcategory(subcategories[0]);
+    }
+  }, [category]);
+
+  // 🔧 JJTEX: Update item type when subcategory changes
+  useEffect(() => {
+    const types = getItemTypes();
+    if (types.length > 0 && !types.includes(itemType)) {
+      setItemType(types[0]);
+    }
+  }, [subcategory]);
 
   const SLEEVE_TYPE_OPTIONS = ["Puff Sleeve", "Normal Sleeve"];
 
   // Category to slug mapping
-  const getCategorySlug = (categoryName) => {
-    const categoryMap = {
-      "Maternity Feeding Wear": "maternity-feeding-wear",
-      "Zipless Feeding Lounge Wear": "zipless-feeding-lounge-wear",
-      "Non-Feeding Lounge Wear": "non-feeding-lounge-wear",
-      "Zipless Feeding Dupatta Lounge Wear": "zipless-feeding-dupatta-lounge-wear"
-    };
-    return categoryMap[categoryName] || "";
+  const getCategorySlug = (categoryKey) => {
+    if (!categoryKey || !categories[categoryKey]) return "";
+    return categories[categoryKey].name.toLowerCase().replace(/\s+/g, '-');
   };
 
   // Helper: all possible sizes
@@ -59,10 +77,9 @@ const EditProduct = ({ product, token, onClose, onUpdate }) => {
 
   // Updated function to check if current category should show sleeve type field
   const shouldShowSleeveType = () => {
-    return category === "Zipless Feeding Lounge Wear" || 
-           category === "Non-Feeding Lounge Wear" || 
-           category === "Zipless Feeding Dupatta Lounge Wear" ||
-           category === "Lounge Wear";
+    // Check if the current category/subcategory/itemType combination should show sleeve type
+    // This can be customized based on your specific requirements
+    return false; // For now, disable sleeve type for the hierarchical category system
   };
 
   // Parse initial sizes: support both ["S", ...] and [{ size, stock }]
@@ -81,6 +98,8 @@ const EditProduct = ({ product, token, onClose, onUpdate }) => {
     if (!description.trim()) return 'Product description is required.';
     if (!price || isNaN(Number(price)) || Number(price) <= 0) return 'Valid price is required.';
     if (!category) return 'Product category is required.';
+    if (!subcategory) return 'Product subcategory is required.';
+    if (!itemType) return 'Product item type is required.';
     if (!Array.isArray(sizes) || sizes.length === 0) return 'At least one size must be selected.';
     
     // Validate that at least one size has stock > 0
@@ -129,6 +148,8 @@ const EditProduct = ({ product, token, onClose, onUpdate }) => {
       formData.append("price", price)
       formData.append("category", category)
       formData.append("categorySlug", getCategorySlug(category))
+      formData.append("subCategory", subcategory)
+      formData.append("type", itemType)
       formData.append("bestseller", bestseller)
       formData.append("sizes", JSON.stringify(sizes))
       formData.append("stock", stock)
@@ -328,52 +349,86 @@ const EditProduct = ({ product, token, onClose, onUpdate }) => {
         />
       </div>
 
-            <div className='grid grid-cols-1 md:grid-cols-2 gap-6'>
+            <div className='grid grid-cols-1 md:grid-cols-3 gap-6'>
               <div className='space-y-2'>
                 <label className='block text-sm font-medium text-gray-700'>Category <span className="text-red-500">*</span></label>
-          <select
-            value={category}
-            onChange={e => setCategory(e.target.value)}
+                <select
+                  value={category}
+                  onChange={e => setCategory(e.target.value)}
                   className='w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white'
-            required
-          >
-            <option value="" disabled>Select a Category</option>
-            {CATEGORY_OPTIONS.map(option => (
-              <option key={option} value={option}>{option}</option>
-            ))}
-          </select>
-        </div>
+                  required
+                >
+                  <option value="">Select a Category</option>
+                  {Object.keys(categories).map(categoryKey => (
+                    <option key={categoryKey} value={categoryKey}>{categories[categoryKey].name}</option>
+                  ))}
+                </select>
+              </div>
 
-        {/* Sleeve Type Field - Only show for Lounge Wear categories */}
-        {shouldShowSleeveType() && (
-          <div>
-            <p className='mb-2'>Sleeve Type</p>
-            <select
-              value={sleeveType}
-              onChange={e => setSleeveType(e.target.value)}
-              className='w-full px-3 py-2 border rounded bg-white text-gray-900'
-              required
-            >
-              <option value="">Select Sleeve Type</option>
-              {SLEEVE_TYPE_OPTIONS.map(option => (
-                <option key={option} value={option}>{option}</option>
-              ))}
-            </select>
-          </div>
-        )}
+              <div className='space-y-2'>
+                <label className='block text-sm font-medium text-gray-700'>Sub Category <span className="text-red-500">*</span></label>
+                <select
+                  value={subcategory}
+                  onChange={e => setSubcategory(e.target.value)}
+                  className='w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white'
+                  required
+                  disabled={!category}
+                >
+                  <option value="">Select a Sub Category</option>
+                  {getSubcategories().map(sub => (
+                    <option key={sub} value={sub}>{categories[category]?.subcategories[sub]?.name || sub}</option>
+                  ))}
+                </select>
+              </div>
 
-        <div>
-          <p className='mb-2'>Product Price</p>
-          <input
-            onChange={(e) => setPrice(e.target.value)}
-            value={price}
-            className='w-full px-3 py-2 border rounded sm:w-[120px]'
-            type="number"
-            placeholder='25'
-            required
-          />
-        </div>
-      </div>
+              <div className='space-y-2'>
+                <label className='block text-sm font-medium text-gray-700'>Item Type <span className="text-red-500">*</span></label>
+                <select
+                  value={itemType}
+                  onChange={e => setItemType(e.target.value)}
+                  className='w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white'
+                  required
+                  disabled={!subcategory}
+                >
+                  <option value="">Select an Item Type</option>
+                  {getItemTypes().map(type => (
+                    <option key={type} value={type}>{type}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            <div className='grid grid-cols-1 md:grid-cols-2 gap-6'>
+              {/* Sleeve Type Field - Only show for Lounge Wear categories */}
+              {shouldShowSleeveType() && (
+                <div>
+                  <p className='mb-2'>Sleeve Type</p>
+                  <select
+                    value={sleeveType}
+                    onChange={e => setSleeveType(e.target.value)}
+                    className='w-full px-3 py-2 border rounded bg-white text-gray-900'
+                    required
+                  >
+                    <option value="">Select Sleeve Type</option>
+                    {SLEEVE_TYPE_OPTIONS.map(option => (
+                      <option key={option} value={option}>{option}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
+              <div>
+                <p className='mb-2'>Product Price</p>
+                <input
+                  onChange={(e) => setPrice(e.target.value)}
+                  value={price}
+                  className='w-full px-3 py-2 border rounded sm:w-[120px]'
+                  type="number"
+                  placeholder='25'
+                  required
+                />
+              </div>
+            </div>
 
       <div>
         <p className='mb-2'>Product Sizes & Stock</p>

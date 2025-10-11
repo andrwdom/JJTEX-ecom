@@ -80,8 +80,8 @@ const ProductCard = ({ product }) => {
           <div className="relative w-full pb-[125%] rounded-[1.5rem] bg-gray-50 mb-4" style={{overflow: 'visible'}}>
             <AnimatePresence mode="wait">
               <motion.img 
-                key={product.image[0]}
-                src={product.image[0]} 
+                key={product.images?.[0]}
+                src={product.images?.[0]} 
                 alt={product.name}
                 className={`absolute inset-0 w-full h-full object-cover transition-transform duration-500 ${
                   isHovered ? 'scale-110' : 'scale-100'
