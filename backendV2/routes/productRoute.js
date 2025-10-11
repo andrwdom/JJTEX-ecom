@@ -5,8 +5,8 @@ import {
     getProductById,
     getAllProducts,
     addProduct,
-    removeProduct,
-    updateProduct,
+    removeProductV2,
+    updateProductV2,
     reorderProducts,
     moveProduct
 } from '../controllers/productController.js'
@@ -33,12 +33,12 @@ productRouter.post('/', verifyToken, multer.fields([
 
 // These ID routes must come last to avoid conflicts with named routes
 productRouter.get('/:id', getProductById);
-productRouter.delete('/:id', verifyToken, removeProduct);
+productRouter.delete('/:id', verifyToken, removeProductV2);
 productRouter.put('/:id', verifyToken, multer.fields([
     { name: 'image1', maxCount: 1 },
     { name: 'image2', maxCount: 1 },
     { name: 'image3', maxCount: 1 },
     { name: 'image4', maxCount: 1 }
-]), updateProduct);
+]), updateProductV2);
 
 export default productRouter
