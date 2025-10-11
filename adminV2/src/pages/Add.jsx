@@ -138,23 +138,7 @@ const Add = ({token}) => {
      }
    };
 
-   useEffect(() => {
-     // Fetch categories from backend
-     if (token && token !== 'undefined' && token.trim() !== '') {
-       axios.get(`${backendUrl}/api/categories`, {
-         headers: { token }
-       }).then(res => {
-         if (res.data.success && Array.isArray(res.data.data)) {
-           setCategories(res.data.data);
-         }
-       }).catch(error => {
-         console.error('Error fetching categories:', error);
-         if (error.response?.status === 401) {
-           toast.error("Authentication failed. Please log in again.");
-         }
-       });
-     }
-   }, [token]);
+   // Note: We're using static categories from the imported file, no need to fetch from backend
 
    // Check token validity on component mount
    useEffect(() => {
@@ -205,22 +189,17 @@ const Add = ({token}) => {
      return false;
    };
 
-   // Category to slug mapping
+   // Category to slug mapping - using the categories from imported data
    const getCategorySlug = (categoryName) => {
-     const categoryMap = {
-       "Maternity Feeding Wear": "maternity-feeding-wear",
-       "Zipless Feeding Lounge Wear": "zipless-feeding-lounge-wear",
-       "Non-Feeding Lounge Wear": "non-feeding-lounge-wear",
-       "Zipless Feeding Dupatta Lounge Wear": "zipless-feeding-dupatta-lounge-wear"
-     };
-     return categoryMap[categoryName] || "";
+     // Convert category key to slug format
+     if (!categoryName) return "";
+     return categoryName.toLowerCase().replace(/\s+/g, '-');
    };
 
    // Updated function to check if current category should show sleeve type field
    const shouldShowSleeveType = () => {
-     return category === "Zipless Feeding Lounge Wear" || 
-            category === "Non-Feeding Lounge Wear" || 
-            category === "Zipless Feeding Dupatta Lounge Wear";
+     // For the new category system, we don't need sleeve type field
+     return false;
    };
 
    const onSubmitHandler = async (e) => {
