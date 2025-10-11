@@ -3,36 +3,22 @@
 
 # But not these directories
 !backend/
+!backend/**/*
 !backendV2/
+!backendV2/**/*
 !frontend/
+!frontend/**/*
 !admin/
+!admin/**/*
 !adminV2/
+!adminV2/**/*
 !deployment/
+!deployment/**/*
 
 # And not these files
 !.gitignore
 !README.md
-
-# Allow frontend source files
-!frontend/src/
-!frontend/src/**/*
-
-# Allow admin source files
-!admin/src/
-!admin/src/**/*
-
-# Allow admin config files
-!admin/package.json
-!admin/package-lock.json
-!admin/vite.config.js
-!admin/tailwind.config.js
-!admin/postcss.config.js
-!admin/index.html
-!admin/README.md
-
-# Allow deployment files
-!deployment/
-!deployment/**/*
+!*.md
 
 # Node modules and env files in any directory
 **/node_modules/
