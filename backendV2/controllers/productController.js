@@ -374,8 +374,8 @@ export const addProduct = async (req, res) => {
 
         // Optimize images
         console.log('🔄 Starting image optimization...');
-        // 🔧 JJTEX: Local storage directory on VPS
-        const uploadDir = process.env.UPLOAD_DIR || path.join(process.cwd(), "uploads", "products");
+        // 🔧 JJTEX: Local storage directory on VPS (matches imageOptimizer expectations)
+        const uploadDir = process.env.UPLOAD_DIR || path.join(process.cwd(), "uploads");
         
         let optimizationResult;
         let optimizedFiles;
@@ -430,9 +430,9 @@ export const addProduct = async (req, res) => {
         } catch (error) {
             console.error('❌ Error generating image URLs:', error);
             // Fallback to simple URLs
-            // 🔧 JJTEX: Serve from /uploads/products/ endpoint
+            // 🔧 JJTEX: Serve from /uploads/ endpoint (matches new upload path)
             imagesUrl = optimizedFiles.map(img => {
-                return `${baseUrl}/uploads/products/${img.filename}`;
+                return `${baseUrl}/uploads/${img.filename}`;
             });
         }
 
