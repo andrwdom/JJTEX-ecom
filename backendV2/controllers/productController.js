@@ -372,10 +372,29 @@ export const addProduct = async (req, res) => {
             });
         }
 
-        // Optimize images
-        console.log('🔄 Starting image optimization...');
+        // Save and optimize images
+        console.log('🔄 Starting image processing...');
         // 🔧 JJTEX: Local storage directory on VPS (matches imageOptimizer expectations)
         const uploadDir = process.env.UPLOAD_DIR || path.join(process.cwd(), "uploads");
+        
+        // Ensure upload directory exists
+        if (!fs.existsSync(uploadDir)) {
+            fs.mkdirSync(uploadDir, { recursive: true });
+        }
+        
+        // First, save the uploaded files to disk
+        const savedFiles = [];
+        for (let i = 0; i < images.length; i++) {
+            const file = images[i];
+            const fileExtension = path.extname(file.originalname);
+            const fileName = `${customId}_image${i + 1}_${Date.now()}${fileExtension}`;
+            const filePath = path.join(uploadDir, fileName);
+            
+            // Save file to disk
+            fs.writeFileSync(filePath, file.buffer);
+            savedFiles.push(filePath);
+            console.log(`💾 Saved image ${i + 1} to: ${filePath}`);
+        }
         
         let optimizationResult;
         let optimizedFiles;
@@ -383,17 +402,21 @@ export const addProduct = async (req, res) => {
         let stats;
         
         try {
-            optimizationResult = await imageOptimizer.optimizeMultipleImages(images, uploadDir);
+            // Now optimize the saved files
+            optimizationResult = await imageOptimizer.optimizeMultipleImages(savedFiles, uploadDir);
             optimizedFiles = optimizationResult.optimizedFiles;
             results = optimizationResult.results;
             stats = imageOptimizer.getOptimizationStats(results);
         } catch (error) {
             console.error('❌ Image optimization failed:', error);
             // Use fallback - keep original files
-            optimizedFiles = images;
-            results = images.map(img => ({
-                originalName: img.originalname,
-                optimizedName: img.filename,
+            optimizedFiles = savedFiles.map(filePath => ({
+                filename: path.basename(filePath),
+                originalname: path.basename(filePath)
+            }));
+            results = savedFiles.map(filePath => ({
+                originalName: path.basename(filePath),
+                optimizedName: path.basename(filePath),
                 originalSize: '0 Bytes',
                 optimizedSize: '0 Bytes',
                 compressionRatio: 0,
@@ -402,8 +425,8 @@ export const addProduct = async (req, res) => {
                 error: null
             }));
             stats = {
-                totalFiles: images.length,
-                successful: images.length,
+                totalFiles: savedFiles.length,
+                successful: savedFiles.length,
                 failed: 0,
                 avgCompressionRatio: 0,
                 totalProcessingTime: 0
