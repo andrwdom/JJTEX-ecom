@@ -109,6 +109,10 @@ const allowedOrigins = process.env.NODE_ENV === 'production'
       'https://shithaa.in',
       'https://www.shithaa.in',
       'https://admin.shithaa.in',  // Admin panel
+      // JJTEX domains
+      'https://jjtextiles.com',
+      'https://www.jjtextiles.com',
+      'https://admin.jjtextiles.com',
       // Instagram in-app browser specific origins
       'https://www.instagram.com',
       'https://instagram.com',
