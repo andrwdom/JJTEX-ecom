@@ -426,8 +426,8 @@ const Add = ({token}) => {
             <p className='mb-2'>Category</p>
             <select onChange={(e) => setCategory(e.target.value)} className='w-full px-3 py-2' required>
               <option value="">Select a Category</option>
-              {CATEGORY_OPTIONS.map(option => (
-                <option key={option} value={option}>{option}</option>
+              {Object.keys(categories).map(categoryKey => (
+                <option key={categoryKey} value={categoryKey}>{categories[categoryKey].name}</option>
               ))}
             </select>
           </div>
