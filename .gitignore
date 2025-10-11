@@ -3,8 +3,10 @@
 
 # But not these directories
 !backend/
+!backendV2/
 !frontend/
 !admin/
+!adminV2/
 !deployment/
 
 # And not these files
