@@ -1,22 +1,8 @@
 import multer from "multer";
 import path from "path";
 
-// SECURITY: Secure file upload configuration with MIME type and size validation
-const storage = multer.diskStorage({
-    destination: function (req, file, cb) {
-        // Use different folders for products and carousel
-        if (req.baseUrl.includes('carousel')) {
-            cb(null, "/var/www/shithaa-ecom/uploads/carousel/");
-        } else {
-            cb(null, "/var/www/shithaa-ecom/uploads/products/");
-        }
-    },
-    filename: function (req, file, cb) {
-        // SECURITY: Generate unique filename, ignore client-provided names
-        const uniqueName = Date.now() + '-' + Math.round(Math.random() * 1E9) + path.extname(file.originalname);
-        cb(null, uniqueName);
-    }
-});
+// SECURITY: Use memory storage to get file buffers for processing
+const storage = multer.memoryStorage();
 
 // SECURITY: File type validation - only allow safe image formats
 const allowedMimeTypes = new Set([

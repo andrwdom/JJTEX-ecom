@@ -455,19 +455,39 @@ export const addProduct = async (req, res) => {
       if (req.files && req.files[field] && req.files[field][0]) {
         const file = req.files[field][0];
         console.log(`🔧 DEBUG: Processing ${field}:`, file.originalname);
+        console.log(`🔧 DEBUG: File object:`, {
+          fieldname: file.fieldname,
+          originalname: file.originalname,
+          encoding: file.encoding,
+          mimetype: file.mimetype,
+          size: file.size,
+          bufferExists: !!file.buffer,
+          bufferLength: file.buffer ? file.buffer.length : 0
+        });
+        
+        // Check if buffer exists
+        if (!file.buffer) {
+          console.error(`❌ ERROR: No buffer found for ${field}`);
+          continue;
+        }
         
         // Generate unique filename
         const fileExtension = path.extname(file.originalname);
         const fileName = `${customId}_${field}_${Date.now()}${fileExtension}`;
         const filePath = path.join(productUploadDir, fileName);
         
-        // Save file to VPS upload folder
-        fs.writeFileSync(filePath, file.buffer);
-        console.log(`🔧 DEBUG: Saved ${field} to:`, filePath);
-        
-        // Generate URL for the saved image
-        const imageUrl = `${process.env.BASE_URL || 'https://jjtextiles.com'}/uploads/products/${fileName}`;
-        images.push(imageUrl);
+        try {
+          // Save file to VPS upload folder
+          fs.writeFileSync(filePath, file.buffer);
+          console.log(`🔧 DEBUG: Saved ${field} to:`, filePath);
+          
+          // Generate URL for the saved image
+          const imageUrl = `${process.env.BASE_URL || 'https://jjtextiles.com'}/uploads/products/${fileName}`;
+          images.push(imageUrl);
+        } catch (writeError) {
+          console.error(`❌ ERROR: Failed to write file ${field}:`, writeError);
+          continue;
+        }
       }
     }
     
