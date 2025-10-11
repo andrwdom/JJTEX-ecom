@@ -3,7 +3,14 @@
  * Provides structured error handling, logging, and monitoring
  */
 
-import * as Sentry from '@sentry/node';
+// 🔧 JJTEX: Make Sentry optional - only import if installed
+let Sentry = null;
+try {
+  const sentryModule = await import('@sentry/node');
+  Sentry = sentryModule;
+} catch (error) {
+  // Sentry not installed - will run without it
+}
 
 // Error severity levels
 export const ErrorSeverity = {
@@ -277,7 +284,7 @@ export class ErrorHandler {
    * Report error to monitoring services
    */
   reportError(error) {
-    if (this.enableSentry && error.severity !== ErrorSeverity.LOW) {
+    if (this.enableSentry && Sentry && error.severity !== ErrorSeverity.LOW) {
       try {
         Sentry.withScope((scope) => {
           scope.setLevel(this.severityToSentryLevel(error.severity));

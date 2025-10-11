@@ -5,7 +5,14 @@
  * for critical business operations
  */
 
-import * as Sentry from '@sentry/node';
+// 🔧 JJTEX: Make Sentry optional - only import if installed
+let Sentry = null;
+try {
+  const sentryModule = await import('@sentry/node');
+  Sentry = sentryModule;
+} catch (error) {
+  // Sentry not installed - will run without it
+}
 import { circuitBreakerManager } from './circuitBreaker.js';
 import { globalErrorHandler } from './errorHandler.js';
 import { atomicStockManager } from './atomicStockManager.js';
@@ -264,15 +271,17 @@ export class CriticalOperationMonitor {
    */
   sendToMonitoringServices(alert) {
     try {
-      // Send to Sentry
-      Sentry.withScope((scope) => {
-        scope.setLevel(alert.severity === 'critical' ? 'error' : 'warning');
-        scope.setTag('alert_type', alert.type);
-        scope.setTag('severity', alert.severity);
-        scope.setContext('alert_context', alert.context);
-        
-        Sentry.captureMessage(`Business Alert: ${alert.type}`, alert.severity === 'critical' ? 'error' : 'warning');
-      });
+      // Send to Sentry (if available)
+      if (Sentry) {
+        Sentry.withScope((scope) => {
+          scope.setLevel(alert.severity === 'critical' ? 'error' : 'warning');
+          scope.setTag('alert_type', alert.type);
+          scope.setTag('severity', alert.severity);
+          scope.setContext('alert_context', alert.context);
+          
+          Sentry.captureMessage(`Business Alert: ${alert.type}`, alert.severity === 'critical' ? 'error' : 'warning');
+        });
+      }
 
       // TODO: Add integrations for:
       // - Slack notifications
