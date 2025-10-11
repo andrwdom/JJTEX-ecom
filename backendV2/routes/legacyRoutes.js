@@ -1,7 +1,7 @@
 import express from 'express';
-import { getProducts } from '../controllers/productController.js';
+import { getAllProducts } from '../controllers/productController.js';
 import { getUserCart, addToCart, updateCart } from '../controllers/cartController.js';
-import { createOrder } from '../controllers/orderController.js';
+import { placeOrder as createOrder } from '../controllers/orderController.js';
 import { 
     placeOrder, 
     placeOrderPhonePe, 
@@ -22,20 +22,16 @@ const legacyRouter = express.Router();
 // Legacy Product Routes
 legacyRouter.get('/api/product/list', async (req, res) => {
   try {
-    const response = await getProducts(req, res);
-    // Transform response to old format
-    if (response.data) {
-      return res.json({
-        success: true,
-        products: response.data.data || response.data
-      });
-    }
+    // Call getAllProducts directly - it already sends the response
+    await getAllProducts(req, res);
   } catch (error) {
     console.error('Legacy product list error:', error);
-    return res.status(500).json({
-      success: false,
-      message: 'Failed to fetch products'
-    });
+    if (!res.headersSent) {
+      return res.status(500).json({
+        success: false,
+        message: 'Failed to fetch products'
+      });
+    }
   }
 });
 
