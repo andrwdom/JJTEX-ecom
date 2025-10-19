@@ -15,11 +15,15 @@ const Carousel = () => {
   const fetchBanners = async () => {
     try {
       const response = await axios.get(`${backendUrl}/api/carousel`)
-      // Ensure response.data is an array
+      // Handle both response formats
       if (Array.isArray(response.data)) {
+        // Direct array response
         setBanners(response.data)
+      } else if (response.data.success && Array.isArray(response.data.data)) {
+        // BackendV2 format: { success: true, data: [...] }
+        setBanners(response.data.data)
       } else {
-        console.warn('Carousel API returned non-array data:', response.data)
+        console.warn('Carousel API returned unexpected format:', response.data)
         setBanners([])
       }
       setLoading(false)
