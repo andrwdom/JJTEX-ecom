@@ -5,6 +5,7 @@ import CartTotal from '../components/CartTotal';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'react-toastify';
 import EmptyCartIcon from '../components/EmptyCartIcon';
+import { fixImageUrl } from '../utils/imageUtils';
 
 const Cart = () => {
   const { products, currency, cartItems, updateQuantity, navigate } = useContext(ShopContext);
@@ -87,7 +88,7 @@ const Cart = () => {
                           <div className="sm:w-32 sm:h-32 w-full h-48 sm:h-auto">
                             <img 
                               className="w-full h-full object-cover" 
-                              src={productData.images?.[0]} 
+                              src={fixImageUrl(productData.images?.[0])} 
                               alt={productData.name}
                               onError={(e) => {
                                 e.target.src = 'https://via.placeholder.com/300x300?text=Image+Not+Found';

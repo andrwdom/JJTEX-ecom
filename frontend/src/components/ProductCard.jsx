@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { Link } from 'react-router-dom'
 import { ShopContext } from '../context/ShopContext'
 import { useContext } from 'react'
+import { fixImageUrl } from '../utils/imageUtils'
 
 const confettiColors = [
   '#ff69b4', '#ffd700', '#7cf6e6', '#ffb347', '#b19cd9', '#fff', '#ff6f91', '#6ec6ff'
@@ -81,7 +82,7 @@ const ProductCard = ({ product }) => {
             <AnimatePresence mode="wait">
               <motion.img 
                 key={product.images?.[0]}
-                src={product.images?.[0]} 
+                src={fixImageUrl(product.images?.[0])} 
                 alt={product.name}
                 className={`absolute inset-0 w-full h-full object-cover transition-transform duration-500 ${
                   isHovered ? 'scale-110' : 'scale-100'

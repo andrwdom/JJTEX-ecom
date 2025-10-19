@@ -1,6 +1,7 @@
 import React, { useContext } from 'react'
 import { ShopContext } from '../context/ShopContext'
 import { Link, useNavigate } from 'react-router-dom'
+import { fixImageUrl } from '../utils/imageUtils'
 
 const ProductItem = ({id, image, name, price}) => {
   const { currency } = useContext(ShopContext);
@@ -20,7 +21,7 @@ const ProductItem = ({id, image, name, price}) => {
       <div className='overflow-hidden'>
         <img 
           className='hover:scale-110 transition ease-in-out' 
-          src={image[0]} 
+          src={fixImageUrl(image[0])} 
           alt={name}
         />
       </div>

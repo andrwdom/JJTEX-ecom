@@ -6,6 +6,7 @@ import RelatedProducts from '../components/RelatedProducts';
 import axios from 'axios';
 import { toast } from 'react-toastify';
 import { motion, AnimatePresence } from 'framer-motion';
+import { fixImageUrl } from '../utils/imageUtils';
 
 // Share options component
 const ShareOptions = ({ product, onClose }) => {
@@ -262,7 +263,7 @@ const Product = () => {
             </button>
             <motion.img
               key={image}
-              src={image}
+              src={fixImageUrl(image)}
               alt={productData.name}
               className="w-full aspect-[4/5] object-cover rounded-2xl shadow-md mb-2"
               initial={{ opacity: 0, scale: 0.98 }}
@@ -277,7 +278,7 @@ const Product = () => {
               {Array.isArray(productData.image) && productData.image.map((img, idx) => (
                 <img
                   key={idx}
-                  src={img}
+                  src={fixImageUrl(img)}
                   alt={productData.name}
                   className={`w-16 h-16 object-cover rounded-lg cursor-pointer border-2 transition-all duration-200 snap-center ${img === image ? 'border-primary-500 scale-105' : 'border-gray-200'}`}
                   onClick={() => setImage(img)}
