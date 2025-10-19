@@ -162,23 +162,27 @@ const ShopContextProvider = (props) => {
     const getProductsData = async () => {
         try {
             setIsLoading(true);
+            console.log('🔄 Fetching products...');
             
             // Use new API service
             const response = await apiService.getProducts();
+            console.log('📦 API Response:', response);
             
             // Handle both response formats
             if (response.success && response.data) {
                 // New format: { success: true, data: [...] }
+                console.log('✅ Using new format, products:', response.data);
                 setProducts(Array.isArray(response.data) ? response.data.reverse() : []);
             } else if (response.products) {
                 // Backend format: { products: [...], total, page, pages, limit }
+                console.log('✅ Using backend format, products:', response.products);
                 setProducts(Array.isArray(response.products) ? response.products.reverse() : []);
             } else {
-                console.log('Products in Latest Collection:', response);
+                console.log('❌ No products found in response:', response);
                 setProducts([]);
             }
         } catch (error) {
-            console.error('Error fetching products:', error);
+            console.error('❌ Error fetching products:', error);
             const errorInfo = apiService.handleError(error);
             toast.error(errorInfo.message || 'Failed to fetch products');
         } finally {
