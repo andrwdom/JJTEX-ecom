@@ -32,7 +32,7 @@ const CartDebug = () => {
         <div>Cart Count: {getCartCount()}</div>
         <div>Cart Amount: ₹{getCartAmount()}</div>
         <div>Items: {cartData.length}</div>
-        {cartData.map((item, index) => (
+        {Array.isArray(cartData) && cartData.map((item, index) => (
           <div key={index} className="text-yellow-300">
             {item.product.name} - {item.size} x{item.quantity}
           </div>

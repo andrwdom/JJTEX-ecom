@@ -48,8 +48,8 @@ const Orders = () => {
       const response = await axios.post(backendUrl + '/api/order/userorders', { userId: JSON.parse(atob(token.split('.')[1])).id }, { headers: { token } });
       if (response.data.success) {
         let allOrdersItem = [];
-        response.data.orders.map((order) => {
-          order.items.map((item) => {
+        Array.isArray(response.data.orders) && response.data.orders.map((order) => {
+          Array.isArray(order.items) && order.items.map((item) => {
             item['status'] = order.status;
             item['payment'] = order.payment;
             item['paymentMethod'] = order.paymentMethod;
@@ -234,7 +234,7 @@ const Orders = () => {
           </div>
         ) : (
           <div className='space-y-6'>
-            {orderData.map((item, index) => (
+            {Array.isArray(orderData) && orderData.map((item, index) => (
               <div key={index} className='bg-white rounded-lg shadow-sm border p-4 md:p-6'>
                 <div className='flex flex-col md:flex-row md:items-center md:justify-between gap-4'>
                   <div className='flex items-start gap-6'>

@@ -69,7 +69,7 @@ const Cart = () => {
                 </motion.div>
               ) : (
                 <div className="space-y-4">
-                  {cartData.map((item, index) => {
+                  {Array.isArray(cartData) && cartData.map((item, index) => {
                     const productData = products.find((product) => product._id === item._id);
                     
                     

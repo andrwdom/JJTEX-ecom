@@ -133,7 +133,7 @@ const UserProfileModal = ({ isOpen, onClose }) => {
             <div className="text-gray-500 text-sm">No orders found.</div>
           ) : (
             <ul className="divide-y divide-gray-100">
-              {orders.map((order, idx) => (
+              {Array.isArray(orders) && orders.map((order, idx) => (
                 <li key={order._id || idx} className="py-2">
                   <div className="flex justify-between items-center">
                     <div>
@@ -148,7 +148,7 @@ const UserProfileModal = ({ isOpen, onClose }) => {
                     </button>
                   </div>
                   <div className="text-xs text-gray-500 mt-1">
-                    {order.items?.map((item, i) => (
+                    {Array.isArray(order.items) && order.items.map((item, i) => (
                       <span key={i}>{item.name} x {item.quantity}{i < order.items.length - 1 ? ', ' : ''}</span>
                     ))}
                   </div>

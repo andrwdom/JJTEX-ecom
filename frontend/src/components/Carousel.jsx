@@ -15,10 +15,17 @@ const Carousel = () => {
   const fetchBanners = async () => {
     try {
       const response = await axios.get(`${backendUrl}/api/carousel`)
-      setBanners(response.data)
+      // Ensure response.data is an array
+      if (Array.isArray(response.data)) {
+        setBanners(response.data)
+      } else {
+        console.warn('Carousel API returned non-array data:', response.data)
+        setBanners([])
+      }
       setLoading(false)
     } catch (error) {
       console.error('Error fetching carousel banners:', error)
+      setBanners([])
       setLoading(false)
     }
   }
@@ -44,7 +51,7 @@ const Carousel = () => {
 
   return (
     <div className="relative w-full h-[400px] overflow-hidden rounded-lg">
-      {banners.map((banner, index) => (
+      {Array.isArray(banners) && banners.map((banner, index) => (
         <div
           key={banner._id}
           className={`absolute w-full h-full transition-opacity duration-500 ${
@@ -75,7 +82,7 @@ const Carousel = () => {
 
       {/* Navigation Dots */}
       <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 flex space-x-2">
-        {banners.map((_, index) => (
+        {Array.isArray(banners) && banners.map((_, index) => (
           <button
             key={index}
             onClick={() => setCurrentSlide(index)}

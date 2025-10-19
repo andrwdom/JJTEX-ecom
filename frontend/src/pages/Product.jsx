@@ -274,7 +274,7 @@ const Product = () => {
               ref={galleryRef}
               className="flex gap-2 mt-2 overflow-x-auto scrollbar-hide px-1 snap-x snap-mandatory"
             >
-              {productData.image.map((img, idx) => (
+              {Array.isArray(productData.image) && productData.image.map((img, idx) => (
                 <img
                   key={idx}
                   src={img}
@@ -302,7 +302,7 @@ const Product = () => {
           <div className="flex flex-col gap-2 my-2">
             <p className="text-sm font-medium text-gray-700 mb-1">Select Size</p>
             <div className="flex gap-2 flex-wrap">
-              {productData.sizes.map((item, index) => (
+              {Array.isArray(productData.sizes) && productData.sizes.map((item, index) => (
                 <button
                   onClick={() => handleSizeSelection(item)}
                   className={`rounded-full border py-2 px-5 text-sm font-semibold transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-primary-400 ${item.size === size ? 'bg-primary-100 border-primary-500 text-primary-600 shadow' : 'bg-gray-100 border-gray-200 text-gray-700'}`}

@@ -265,7 +265,7 @@ const Collection = () => {
         {/* Products Grid */}
         <div className='grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 gap-y-8 w-full'>
           {filterProducts.length > 0 ? (
-            filterProducts.map((item, index) => (
+            Array.isArray(filterProducts) && filterProducts.map((item, index) => (
               <ProductItem 
                 key={index} 
                 name={item.name} 

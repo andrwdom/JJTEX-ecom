@@ -37,7 +37,7 @@ const LatestCollection = () => {
 
             {/* Products Grid */}
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-6 max-w-7xl mx-auto">
-                {latestProducts.map((product) => (
+                {Array.isArray(latestProducts) && latestProducts.map((product) => (
                     <ProductCard key={product._id} product={product} />
                 ))}
 

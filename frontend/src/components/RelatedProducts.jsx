@@ -31,7 +31,7 @@ const RelatedProducts = ({category,subCategory}) => {
       </div>
       {/* Mobile: horizontal scroll, Desktop: grid */}
       <div className="flex gap-4 overflow-x-auto snap-x snap-mandatory pb-2 sm:grid sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 sm:gap-4 sm:overflow-x-visible">
-        {related.map((item,index)=>(
+        {Array.isArray(related) && related.map((item,index)=>(
           <div
             key={index}
             className="min-w-[70vw] max-w-xs snap-center sm:min-w-0 sm:max-w-none flex-shrink-0"
