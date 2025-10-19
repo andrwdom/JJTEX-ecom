@@ -8,7 +8,7 @@ import { getApiEndpoint, useLegacyEndpoints } from '../config/api.config.js';
 
 class ApiService {
     constructor() {
-        this.baseURL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:4000';
+        this.baseURL = import.meta.env.VITE_BACKEND_URL || 'https://api.jjtextiles.com';
         this.useLegacy = useLegacyEndpoints();
         this.setupAxios();
     }

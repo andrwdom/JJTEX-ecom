@@ -19,7 +19,7 @@ import ProtectedRoute from './components/ProtectedRoute';
 // 🔧 JJTEX: Update this to point to your backendV2 server
 // Development: http://localhost:4000
 // Production: https://api.jjtextiles.com (or your production URL)
-export const backendUrl = import.meta.env.VITE_API_URL || 'http://localhost:4000'
+export const backendUrl = import.meta.env.VITE_API_URL || 'https://api.jjtextiles.com'
 export const currency = '₹'
 
 const App = () => {

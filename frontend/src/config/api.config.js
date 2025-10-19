@@ -3,7 +3,7 @@
 
 export const API_CONFIG = {
   // Base URL - can be updated to point to backendV2
-  BASE_URL: import.meta.env.VITE_BACKEND_URL || 'http://localhost:4000',
+  BASE_URL: import.meta.env.VITE_BACKEND_URL || 'https://api.jjtextiles.com',
   
   // API Version
   VERSION: 'v2',

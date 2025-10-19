@@ -30,7 +30,7 @@ import RefundPolicy from './pages/policies/RefundPolicy'
 import ReturnPolicy from './pages/policies/ReturnPolicy'
 import ShippingPolicy from './pages/policies/ShippingPolicy'
 
-export const backendUrl = import.meta.env.VITE_BACKEND_URL;
+export const backendUrl = import.meta.env.VITE_BACKEND_URL || 'https://api.jjtextiles.com';
 
 const App = () => {
   return (
