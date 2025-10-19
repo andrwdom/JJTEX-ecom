@@ -149,8 +149,8 @@ const Product = () => {
   const fetchProductData = async () => {
     try {
       setLoading(true);
-      const response = await axios.post(backendUrl + '/api/product/single', { productId });
-      if (response.data.success) {
+      const response = await axios.get(backendUrl + `/api/products/${productId}`);
+      if (response.data.product) {
         setProductData(response.data.product);
         setImage(response.data.product.images?.[0]);
       } else {

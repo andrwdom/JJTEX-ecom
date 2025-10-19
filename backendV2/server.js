@@ -384,18 +384,36 @@ const uploadsPath = process.env.UPLOAD_DIR || path.join(process.cwd(), 'uploads'
 app.use('/uploads', express.static(uploadsPath, {
     maxAge: '1d', // Cache for 1 day
     etag: true,
-    lastModified: true
+    lastModified: true,
+    setHeaders: (res, path) => {
+        // Add CORS headers for images
+        res.setHeader('Access-Control-Allow-Origin', '*');
+        res.setHeader('Access-Control-Allow-Methods', 'GET');
+        res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+    }
 }))
 // Legacy routes for backward compatibility
 app.use('/images', express.static(uploadsPath, {
     maxAge: '1d', // Cache for 1 day
     etag: true,
-    lastModified: true
+    lastModified: true,
+    setHeaders: (res, path) => {
+        // Add CORS headers for images
+        res.setHeader('Access-Control-Allow-Origin', '*');
+        res.setHeader('Access-Control-Allow-Methods', 'GET');
+        res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+    }
 }));
 app.use('/gallery', express.static(uploadsPath, {
     maxAge: '1d', // Cache for 1 day
     etag: true,
-    lastModified: true
+    lastModified: true,
+    setHeaders: (res, path) => {
+        // Add CORS headers for images
+        res.setHeader('Access-Control-Allow-Origin', '*');
+        res.setHeader('Access-Control-Allow-Methods', 'GET');
+        res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+    }
 }));
 
 // api endpoints
