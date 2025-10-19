@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import axios from 'axios'
 
-const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:4010'
+const backendUrl = import.meta.env.VITE_BACKEND_URL || 'https://api.jjtextiles.com'
 
 const Carousel = () => {
   const [currentSlide, setCurrentSlide] = useState(0)

@@ -8,8 +8,12 @@ const BestSeller = () => {
     const [bestSellers, setBestSellers] = useState([])
 
     useEffect(() => {
-        const bestSellerProducts = products.filter(product => product.bestseller === true)
-        setBestSellers(bestSellerProducts)
+        if (Array.isArray(products)) {
+            const bestSellerProducts = products.filter(product => product.bestseller === true)
+            setBestSellers(bestSellerProducts)
+        } else {
+            setBestSellers([])
+        }
     }, [products])
 
     const containerVariants = {

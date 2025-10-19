@@ -168,12 +168,12 @@ const ShopContextProvider = (props) => {
             const response = await apiService.getProducts();
             console.log('📦 API Response:', response);
             
-            // Handle both response formats
-            if (response.success && response.data) {
+            // Handle both response formats with additional safety checks
+            if (response && response.success && response.data) {
                 // New format: { success: true, data: [...] }
                 console.log('✅ Using new format, products:', response.data);
                 setProducts(Array.isArray(response.data) ? response.data.reverse() : []);
-            } else if (response.products) {
+            } else if (response && response.products) {
                 // Backend format: { products: [...], total, page, pages, limit }
                 console.log('✅ Using backend format, products:', response.products);
                 setProducts(Array.isArray(response.products) ? response.products.reverse() : []);
@@ -237,7 +237,7 @@ const ShopContextProvider = (props) => {
     }, [token]);
 
     const value = {
-        products,
+        products: Array.isArray(products) ? products : [],
         currency,
         currencySymbol,
         currencyCode,
