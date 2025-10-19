@@ -386,10 +386,13 @@ app.use('/uploads', express.static(uploadsPath, {
     etag: true,
     lastModified: true,
     setHeaders: (res, path) => {
-        // Add CORS headers for images
+        // Add comprehensive CORS headers for images
         res.setHeader('Access-Control-Allow-Origin', '*');
-        res.setHeader('Access-Control-Allow-Methods', 'GET');
-        res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+        res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
+        res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
+        res.setHeader('Access-Control-Allow-Credentials', 'false');
+        res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
+        res.setHeader('Cross-Origin-Embedder-Policy', 'unsafe-none');
     }
 }))
 // Legacy routes for backward compatibility
@@ -398,10 +401,13 @@ app.use('/images', express.static(uploadsPath, {
     etag: true,
     lastModified: true,
     setHeaders: (res, path) => {
-        // Add CORS headers for images
+        // Add comprehensive CORS headers for images
         res.setHeader('Access-Control-Allow-Origin', '*');
-        res.setHeader('Access-Control-Allow-Methods', 'GET');
-        res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+        res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
+        res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
+        res.setHeader('Access-Control-Allow-Credentials', 'false');
+        res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
+        res.setHeader('Cross-Origin-Embedder-Policy', 'unsafe-none');
     }
 }));
 app.use('/gallery', express.static(uploadsPath, {

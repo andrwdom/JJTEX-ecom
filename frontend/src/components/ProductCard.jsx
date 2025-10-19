@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { Link } from 'react-router-dom'
 import { ShopContext } from '../context/ShopContext'
 import { useContext } from 'react'
-import { fixImageUrl } from '../utils/imageUtils'
+import { fixImageUrl, getFallbackImage } from '../utils/imageUtils'
 
 const confettiColors = [
   '#ff69b4', '#ffd700', '#7cf6e6', '#ffb347', '#b19cd9', '#fff', '#ff6f91', '#6ec6ff'
@@ -91,7 +91,7 @@ const ProductCard = ({ product }) => {
                 onLoad={() => setIsImageLoaded(true)}
                 onError={(e) => {
                   console.warn('Image failed to load:', e.target.src);
-                  e.target.src = 'https://via.placeholder.com/300x400?text=Image+Not+Available';
+                  e.target.src = getFallbackImage('product');
                   setIsImageLoaded(true);
                 }}
                 initial={{ opacity: 0 }}

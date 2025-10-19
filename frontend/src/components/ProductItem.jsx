@@ -1,7 +1,7 @@
 import React, { useContext } from 'react'
 import { ShopContext } from '../context/ShopContext'
 import { Link, useNavigate } from 'react-router-dom'
-import { fixImageUrl } from '../utils/imageUtils'
+import { fixImageUrl, getFallbackImage } from '../utils/imageUtils'
 
 const ProductItem = ({id, image, name, price}) => {
   const { currency } = useContext(ShopContext);
@@ -25,7 +25,7 @@ const ProductItem = ({id, image, name, price}) => {
           alt={name}
           onError={(e) => {
             console.warn('Image failed to load:', e.target.src);
-            e.target.src = 'https://via.placeholder.com/300x400?text=Image+Not+Available';
+            e.target.src = getFallbackImage('product');
           }}
         />
       </div>

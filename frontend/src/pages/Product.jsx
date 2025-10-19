@@ -6,7 +6,7 @@ import RelatedProducts from '../components/RelatedProducts';
 import axios from 'axios';
 import { toast } from 'react-toastify';
 import { motion, AnimatePresence } from 'framer-motion';
-import { fixImageUrl } from '../utils/imageUtils';
+import { fixImageUrl, getFallbackImage } from '../utils/imageUtils';
 
 // Share options component
 const ShareOptions = ({ product, onClose }) => {
@@ -271,7 +271,7 @@ const Product = () => {
               transition={{ duration: 0.4 }}
               onError={(e) => {
                 console.warn('Image failed to load:', e.target.src);
-                e.target.src = 'https://via.placeholder.com/400x500?text=Image+Not+Available';
+                e.target.src = getFallbackImage('product');
               }}
             />
             {/* Thumbnails - horizontal scroll on mobile */}
@@ -288,7 +288,7 @@ const Product = () => {
                   onClick={() => setImage(img)}
                   onError={(e) => {
                     console.warn('Thumbnail image failed to load:', e.target.src);
-                    e.target.src = 'https://via.placeholder.com/64x64?text=No+Image';
+                    e.target.src = getFallbackImage('thumbnail');
                   }}
                 />
               ))}
