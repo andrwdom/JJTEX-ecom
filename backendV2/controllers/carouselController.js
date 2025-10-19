@@ -1,34 +1,6 @@
 import CarouselBanner from '../models/CarouselBanner.js';
-import { Readable } from 'stream';
+import fs from 'fs';
 import path from 'path';
-import cloudinary from 'cloudinary';
-
-// Helper function to upload buffer to Cloudinary
-const uploadBuffer = (buffer) => {
-  return new Promise((resolve, reject) => {
-    const uploadStream = cloudinary.uploader.upload_stream(
-      {
-        folder: 'carousel_banners',
-        width: 1920,
-        height: 800,
-        crop: 'fill'
-      },
-      (error, result) => {
-        if (error) reject(error);
-        else resolve(result);
-      }
-    );
-
-    const readableStream = new Readable({
-      read() {
-        this.push(buffer);
-        this.push(null);
-      }
-    });
-
-    readableStream.pipe(uploadStream);
-  });
-};
 
 // Get all carousel banners
 export const getCarouselBanners = async (req, res) => {
@@ -118,8 +90,20 @@ export const createCarouselBanner = async (req, res) => {
     }
 
     try {
-      const baseUrl = process.env.BASE_URL || 'https://shithaa.in';
-      const imageUrl = `${baseUrl}/images/carousel/${imageFile.filename}`;
+      // Create carousel directory if it doesn't exist
+      const carouselDir = path.join(process.env.UPLOAD_DIR || '/var/www/jjtex-ecom/uploads', 'carousel');
+      if (!fs.existsSync(carouselDir)) {
+        fs.mkdirSync(carouselDir, { recursive: true });
+      }
+
+      // Save image to VPS storage
+      const fileName = `carousel_${Date.now()}_${imageFile.originalname}`;
+      const filePath = path.join(carouselDir, fileName);
+      
+      fs.writeFileSync(filePath, imageFile.buffer);
+      
+      const baseUrl = process.env.BASE_URL || 'https://api.jjtextiles.com';
+      const imageUrl = `${baseUrl}/uploads/carousel/${fileName}`;
 
       const banner = new CarouselBanner({
         image: imageUrl,
@@ -133,9 +117,9 @@ export const createCarouselBanner = async (req, res) => {
 
       await banner.save();
       res.status(201).json(banner);
-    } catch (cloudinaryError) {
-      console.error('Cloudinary upload error:', cloudinaryError);
-      throw new Error(`Failed to upload image to Cloudinary: ${cloudinaryError.message}`);
+    } catch (uploadError) {
+      console.error('VPS upload error:', uploadError);
+      throw new Error(`Failed to upload image to VPS: ${uploadError.message}`);
     }
   } catch (error) {
     console.error('Banner creation error:', error);
@@ -163,8 +147,20 @@ export const updateCarouselBanner = async (req, res) => {
     };
 
     if (imageFile) {
-      const baseUrl = process.env.BASE_URL || 'https://shithaa.in';
-      const imageUrl = `${baseUrl}/images/carousel/${imageFile.filename}`;
+      // Create carousel directory if it doesn't exist
+      const carouselDir = path.join(process.env.UPLOAD_DIR || '/var/www/jjtex-ecom/uploads', 'carousel');
+      if (!fs.existsSync(carouselDir)) {
+        fs.mkdirSync(carouselDir, { recursive: true });
+      }
+
+      // Save new image to VPS storage
+      const fileName = `carousel_${Date.now()}_${imageFile.originalname}`;
+      const filePath = path.join(carouselDir, fileName);
+      
+      fs.writeFileSync(filePath, imageFile.buffer);
+      
+      const baseUrl = process.env.BASE_URL || 'https://api.jjtextiles.com';
+      const imageUrl = `${baseUrl}/uploads/carousel/${fileName}`;
       updateData.image = imageUrl;
     }
 
@@ -195,9 +191,20 @@ export const deleteCarouselBanner = async (req, res) => {
       return res.status(404).json({ message: 'Banner not found' });
     }
 
-    // Delete image from Cloudinary
-    const publicId = banner.image.split('/').slice(-1)[0].split('.')[0];
-    await cloudinary.uploader.destroy(publicId);
+    // Delete image from VPS storage
+    try {
+      const imagePath = banner.image;
+      if (imagePath && imagePath.includes('/uploads/carousel/')) {
+        const fileName = imagePath.split('/uploads/carousel/')[1];
+        const filePath = path.join(process.env.UPLOAD_DIR || '/var/www/jjtex-ecom/uploads', 'carousel', fileName);
+        if (fs.existsSync(filePath)) {
+          fs.unlinkSync(filePath);
+        }
+      }
+    } catch (fileError) {
+      console.error('Error deleting image file:', fileError);
+      // Continue with deletion even if file deletion fails
+    }
 
     res.json({ message: 'Banner deleted successfully' });
   } catch (error) {
