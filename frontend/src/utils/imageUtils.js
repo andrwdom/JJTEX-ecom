@@ -3,15 +3,19 @@
  */
 
 /**
- * Fix image URLs to use the correct domain
- * Replaces jjtextiles.com with api.jjtextiles.com for consistency
+ * Fix image URLs to use the correct domain and path structure
  * @param {string} url - The image URL to fix
  * @returns {string} - The fixed image URL
  */
 export const fixImageUrl = (url) => {
   if (!url) return url
-  // Replace jjtextiles.com with api.jjtextiles.com for consistency
-  return url.replace('https://jjtextiles.com/', 'https://api.jjtextiles.com/')
+  
+  // Fix domain issues
+  let fixedUrl = url.replace('https://jjtextiles.com/', 'https://api.jjtextiles.com/')
+  
+  // Don't change the path structure - backendV2 serves both /images and /uploads routes
+  // Just ensure the domain is correct
+  return fixedUrl
 }
 
 /**

@@ -23,6 +23,10 @@ const ProductItem = ({id, image, name, price}) => {
           className='hover:scale-110 transition ease-in-out' 
           src={fixImageUrl(image[0])} 
           alt={name}
+          onError={(e) => {
+            console.warn('Image failed to load:', e.target.src);
+            e.target.src = 'https://via.placeholder.com/300x400?text=Image+Not+Available';
+          }}
         />
       </div>
       <p className='pt-3 pb-1 text-sm'>{name}</p>

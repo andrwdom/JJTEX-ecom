@@ -89,6 +89,11 @@ const ProductCard = ({ product }) => {
                 }`}
                 loading="lazy"
                 onLoad={() => setIsImageLoaded(true)}
+                onError={(e) => {
+                  console.warn('Image failed to load:', e.target.src);
+                  e.target.src = 'https://via.placeholder.com/300x400?text=Image+Not+Available';
+                  setIsImageLoaded(true);
+                }}
                 initial={{ opacity: 0 }}
                 animate={{ opacity: isImageLoaded ? 1 : 0 }}
                 exit={{ opacity: 0 }}

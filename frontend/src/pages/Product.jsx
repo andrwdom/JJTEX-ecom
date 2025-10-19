@@ -269,6 +269,10 @@ const Product = () => {
               initial={{ opacity: 0, scale: 0.98 }}
               animate={{ opacity: 1, scale: 1 }}
               transition={{ duration: 0.4 }}
+              onError={(e) => {
+                console.warn('Image failed to load:', e.target.src);
+                e.target.src = 'https://via.placeholder.com/400x500?text=Image+Not+Available';
+              }}
             />
             {/* Thumbnails - horizontal scroll on mobile */}
             <div
@@ -282,6 +286,10 @@ const Product = () => {
                   alt={productData.name}
                   className={`w-16 h-16 object-cover rounded-lg cursor-pointer border-2 transition-all duration-200 snap-center ${img === image ? 'border-primary-500 scale-105' : 'border-gray-200'}`}
                   onClick={() => setImage(img)}
+                  onError={(e) => {
+                    console.warn('Thumbnail image failed to load:', e.target.src);
+                    e.target.src = 'https://via.placeholder.com/64x64?text=No+Image';
+                  }}
                 />
               ))}
             </div>
