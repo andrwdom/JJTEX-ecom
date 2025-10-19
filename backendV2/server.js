@@ -111,6 +111,7 @@ const allowedOrigins = process.env.NODE_ENV === 'production'
       'https://jjtextiles.com',
       'https://www.jjtextiles.com',
       'https://admin.jjtextiles.com',
+      'https://api.jjtextiles.com',
       // Instagram in-app browser specific origins
       'https://www.instagram.com',
       'https://instagram.com',

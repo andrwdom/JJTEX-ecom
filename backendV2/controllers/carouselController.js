@@ -1,6 +1,7 @@
 import CarouselBanner from '../models/CarouselBanner.js';
 import { Readable } from 'stream';
 import path from 'path';
+import cloudinary from 'cloudinary';
 
 // Helper function to upload buffer to Cloudinary
 const uploadBuffer = (buffer) => {
@@ -42,6 +43,40 @@ export const getCarouselBanners = async (req, res) => {
     } else {
       // Public gets only active banners
       banners = await CarouselBanner.find({ isActive: { $ne: false } }).sort({ order: 1 });
+    }
+    
+    // If no banners found, return sample data for frontend
+    if (!banners || banners.length === 0) {
+      const sampleCarousels = [
+        {
+          id: 'sample-1',
+          url: 'https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=800&h=400&fit=crop',
+          alt: 'Fashion Collection 1',
+          title: 'New Arrivals',
+          link: '/collections/new-arrivals',
+          order: 1,
+          isActive: true,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString()
+        },
+        {
+          id: 'sample-2',
+          url: 'https://images.unsplash.com/photo-1490481651871-ab68de25d43d?w=800&h=400&fit=crop',
+          alt: 'Fashion Collection 2',
+          title: 'Summer Styles',
+          link: '/collections/summer',
+          order: 2,
+          isActive: true,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString()
+        }
+      ];
+      
+      return res.json({
+        success: true,
+        data: sampleCarousels,
+        message: 'Carousel images retrieved successfully (sample data)'
+      });
     }
     
     // Transform data to match frontend expectations

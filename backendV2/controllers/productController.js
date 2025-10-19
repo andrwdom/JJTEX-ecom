@@ -482,7 +482,8 @@ export const addProduct = async (req, res) => {
           console.log(`🔧 DEBUG: Saved ${field} to:`, filePath);
           
           // Generate URL for the saved image
-          const imageUrl = `${process.env.BASE_URL || 'https://jjtextiles.com'}/uploads/products/${fileName}`;
+          const baseUrl = process.env.BASE_URL || 'https://api.jjtextiles.com';
+          const imageUrl = `${baseUrl}/uploads/products/${fileName}`;
           images.push(imageUrl);
         } catch (writeError) {
           console.error(`❌ ERROR: Failed to write file ${field}:`, writeError);
@@ -636,7 +637,8 @@ export const updateProductV2 = async (req, res) => {
           try {
             fs.writeFileSync(filePath, file.buffer);
             console.log(`🔧 DEBUG: Saved ${field} to:`, filePath);
-            const imageUrl = `${process.env.BASE_URL || 'https://jjtextiles.com'}/uploads/products/${fileName}`;
+            const baseUrl = process.env.BASE_URL || 'https://api.jjtextiles.com';
+            const imageUrl = `${baseUrl}/uploads/products/${fileName}`;
             newImages.push(imageUrl);
           } catch (writeError) {
             console.error(`❌ ERROR: Failed to write file ${field} in updateProductV2:`, writeError);
