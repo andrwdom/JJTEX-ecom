@@ -166,10 +166,16 @@ const ShopContextProvider = (props) => {
             // Use new API service
             const response = await apiService.getProducts();
             
-            if (response.success) {
+            // Handle both response formats
+            if (response.success && response.data) {
+                // New format: { success: true, data: [...] }
                 setProducts(Array.isArray(response.data) ? response.data.reverse() : []);
+            } else if (response.products) {
+                // Backend format: { products: [...], total, page, pages, limit }
+                setProducts(Array.isArray(response.products) ? response.products.reverse() : []);
             } else {
-                toast.error(response.message);
+                console.log('Products in Latest Collection:', response);
+                setProducts([]);
             }
         } catch (error) {
             console.error('Error fetching products:', error);
