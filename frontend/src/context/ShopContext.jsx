@@ -177,6 +177,10 @@ const ShopContextProvider = (props) => {
                 // Backend format: { products: [...], total, page, pages, limit }
                 console.log('✅ Using backend format, products:', response.products);
                 setProducts(Array.isArray(response.products) ? response.products.reverse() : []);
+            } else if (Array.isArray(response)) {
+                // Direct array response
+                console.log('✅ Direct array response, products:', response);
+                setProducts(response.reverse());
             } else {
                 console.log('❌ No products found in response:', response);
                 setProducts([]);

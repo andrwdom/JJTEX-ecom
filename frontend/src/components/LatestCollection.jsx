@@ -8,7 +8,13 @@ const LatestCollection = () => {
 
     useEffect(() => {
         console.log('Products in Latest Collection:', products) // Debug log
-        setLatestProducts(products.slice(0, 5))
+        // Ensure products is an array before slicing
+        if (Array.isArray(products)) {
+            setLatestProducts(products.slice(0, 5))
+        } else {
+            console.warn('Products is not an array:', products)
+            setLatestProducts([])
+        }
     }, [products])
 
     return (
