@@ -180,14 +180,14 @@ const ShopContextProvider = (props) => {
             console.log('📦 API Response:', response);
             
             // Handle both response formats with additional safety checks
-            if (response && response.success && response.data) {
+            if (response && response.products) {
+                // BackendV2 format: { products: [...], total, page, pages, limit }
+                console.log('✅ Using backendV2 format, products:', response.products);
+                safeSetProducts(Array.isArray(response.products) ? response.products.reverse() : []);
+            } else if (response && response.success && response.data) {
                 // New format: { success: true, data: [...] }
                 console.log('✅ Using new format, products:', response.data);
                 safeSetProducts(Array.isArray(response.data) ? response.data.reverse() : []);
-            } else if (response && response.products) {
-                // Backend format: { products: [...], total, page, pages, limit }
-                console.log('✅ Using backend format, products:', response.products);
-                safeSetProducts(Array.isArray(response.products) ? response.products.reverse() : []);
             } else if (Array.isArray(response)) {
                 // Direct array response
                 console.log('✅ Direct array response, products:', response);
@@ -199,7 +199,16 @@ const ShopContextProvider = (props) => {
         } catch (error) {
             console.error('❌ Error fetching products:', error);
             const errorInfo = apiService.handleError(error);
-            toast.error(errorInfo.message || 'Failed to fetch products');
+            
+            // Handle timeout specifically
+            if (error.code === 'ECONNABORTED') {
+                console.warn('⚠️ API timeout - retrying in 5 seconds...');
+                setTimeout(() => {
+                    getProductsData();
+                }, 5000);
+            } else {
+                toast.error(errorInfo.message || 'Failed to fetch products');
+            }
         } finally {
             setIsLoading(false);
         }
