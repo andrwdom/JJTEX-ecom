@@ -18,6 +18,16 @@ const ShopContextProvider = (props) => {
     const [showSearch, setShowSearch] = useState(false);
     const [cartItems, setCartItems] = useState({});
     const [products, setProducts] = useState([]);
+    
+    // Safety function to ensure products is always an array
+    const safeSetProducts = (newProducts) => {
+        if (Array.isArray(newProducts)) {
+            setProducts(newProducts);
+        } else {
+            console.warn('Attempted to set products to non-array:', newProducts);
+            setProducts([]);
+        }
+    };
     const [token, setToken] = useState(localStorage.getItem('token') || '');
     const [isLoading, setIsLoading] = useState(false);
     const navigate = useNavigate();
@@ -163,6 +173,7 @@ const ShopContextProvider = (props) => {
         try {
             setIsLoading(true);
             console.log('🔄 Fetching products...');
+            console.log('🔄 Current products state before fetch:', products, 'Type:', typeof products);
             
             // Use new API service
             const response = await apiService.getProducts();
@@ -172,18 +183,18 @@ const ShopContextProvider = (props) => {
             if (response && response.success && response.data) {
                 // New format: { success: true, data: [...] }
                 console.log('✅ Using new format, products:', response.data);
-                setProducts(Array.isArray(response.data) ? response.data.reverse() : []);
+                safeSetProducts(Array.isArray(response.data) ? response.data.reverse() : []);
             } else if (response && response.products) {
                 // Backend format: { products: [...], total, page, pages, limit }
                 console.log('✅ Using backend format, products:', response.products);
-                setProducts(Array.isArray(response.products) ? response.products.reverse() : []);
+                safeSetProducts(Array.isArray(response.products) ? response.products.reverse() : []);
             } else if (Array.isArray(response)) {
                 // Direct array response
                 console.log('✅ Direct array response, products:', response);
-                setProducts(response.reverse());
+                safeSetProducts(response.reverse());
             } else {
                 console.log('❌ No products found in response:', response);
-                setProducts([]);
+                safeSetProducts([]);
             }
         } catch (error) {
             console.error('❌ Error fetching products:', error);
@@ -259,6 +270,9 @@ const ShopContextProvider = (props) => {
         isLoading,
         user
     };
+    
+    // Debug log to track products state
+    console.log('🔄 ShopContext render - products:', products, 'type:', typeof products, 'isArray:', Array.isArray(products));
 
     return (
         <ShopContext.Provider value={value}>

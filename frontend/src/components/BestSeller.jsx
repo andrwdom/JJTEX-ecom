@@ -8,10 +8,12 @@ const BestSeller = () => {
     const [bestSellers, setBestSellers] = useState([])
 
     useEffect(() => {
+        console.log('BestSeller - Products:', products, 'Type:', typeof products, 'Is Array:', Array.isArray(products))
         if (Array.isArray(products)) {
             const bestSellerProducts = products.filter(product => product.bestseller === true)
             setBestSellers(bestSellerProducts)
         } else {
+            console.warn('BestSeller - Products is not an array:', products)
             setBestSellers([])
         }
     }, [products])
