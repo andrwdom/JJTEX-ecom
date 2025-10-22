@@ -183,7 +183,10 @@ export const getAllProducts = async (req, res) => {
             if (product.images && Array.isArray(product.images)) {
                 product.images = product.images.map(img => {
                     // Fix image URLs to use correct path
-                    if (img && !img.startsWith('http')) {
+                    if (img && img.includes('/images/products/')) {
+                        // Convert /images/products/ to /uploads/products/
+                        return img.replace('/images/products/', '/uploads/products/');
+                    } else if (img && !img.startsWith('http')) {
                         return img.startsWith('/uploads/') ? img : `/uploads/${img}`;
                     }
                     return img;
@@ -298,7 +301,10 @@ export const listProducts = async (req, res) => {
             if (product.images && Array.isArray(product.images)) {
                 product.images = product.images.map(img => {
                     // Fix image URLs to use correct path
-                    if (img && !img.startsWith('http')) {
+                    if (img && img.includes('/images/products/')) {
+                        // Convert /images/products/ to /uploads/products/
+                        return img.replace('/images/products/', '/uploads/products/');
+                    } else if (img && !img.startsWith('http')) {
                         return img.startsWith('/uploads/') ? img : `/uploads/${img}`;
                     }
                     return img;
@@ -404,14 +410,20 @@ export const getProductsFast = async (req, res) => {
             customId: p.customId,
             image: p.images?.map(img => {
                 // Fix image URLs to use correct path
-                if (img && !img.startsWith('http')) {
+                if (img && img.includes('/images/products/')) {
+                    // Convert /images/products/ to /uploads/products/
+                    return img.replace('/images/products/', '/uploads/products/');
+                } else if (img && !img.startsWith('http')) {
                     return img.startsWith('/uploads/') ? img : `/uploads/${img}`;
                 }
                 return img;
             }) || [], // Frontend compatibility
             images: p.images?.map(img => {
                 // Fix image URLs to use correct path
-                if (img && !img.startsWith('http')) {
+                if (img && img.includes('/images/products/')) {
+                    // Convert /images/products/ to /uploads/products/
+                    return img.replace('/images/products/', '/uploads/products/');
+                } else if (img && !img.startsWith('http')) {
                     return img.startsWith('/uploads/') ? img : `/uploads/${img}`;
                 }
                 return img;
