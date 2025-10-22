@@ -490,10 +490,15 @@ export const getProductsFast = async (req, res) => {
     }
 };
 
-// Health check endpoint for products API
+// Enhanced health check endpoint for products API
 export const healthCheck = async (req, res) => {
     try {
         const startTime = Date.now();
+        const healthData = {
+            status: 'healthy',
+            timestamp: new Date().toISOString(),
+            services: {}
+        };
         
         // Quick database ping
         const dbStart = Date.now();

@@ -14,13 +14,16 @@ class ApiService {
     }
 
     setupAxios() {
-        // Create axios instance
+        // Create axios instance with enhanced configuration
         this.client = axios.create({
             baseURL: this.baseURL,
-            timeout: 10000, // Reduced from 30s to 10s for better UX
+            timeout: 15000, // Increased to 15s for better reliability
             headers: {
                 'Content-Type': 'application/json',
             },
+            // Add retry configuration
+            retry: 3,
+            retryDelay: 1000,
         });
 
         // Request interceptor
@@ -46,23 +49,46 @@ class ApiService {
             }
         );
 
-        // Response interceptor
+        // Enhanced response interceptor with better retry logic
         this.client.interceptors.response.use(
             (response) => {
                 return response;
             },
             async (error) => {
+                const config = error.config;
+                
                 if (error.response?.status === 401) {
                     // Handle authentication errors
                     localStorage.removeItem('token');
                     window.location.href = '/login';
+                    return Promise.reject(error);
                 }
 
-                // Retry logic for server errors
-                if (error.response?.status >= 500 && error.config && !error.config.__retryCount) {
-                    error.config.__retryCount = 1;
-                    await new Promise(resolve => setTimeout(resolve, 1000));
-                    return this.client(error.config);
+                // Enhanced retry logic for network errors and server errors
+                if (config && !config.__retryCount) {
+                    config.__retryCount = 0;
+                }
+
+                const shouldRetry = (
+                    // Network errors (no response)
+                    !error.response ||
+                    // Server errors (5xx)
+                    error.response.status >= 500 ||
+                    // Timeout errors
+                    error.code === 'ECONNABORTED' ||
+                    // Connection errors
+                    error.code === 'ENOTFOUND' ||
+                    error.code === 'ECONNREFUSED'
+                );
+
+                if (shouldRetry && config && config.__retryCount < 3) {
+                    config.__retryCount += 1;
+                    const delay = Math.pow(2, config.__retryCount) * 1000; // Exponential backoff
+                    
+                    console.warn(`🔄 Retrying request (attempt ${config.__retryCount}/3) after ${delay}ms delay`);
+                    
+                    await new Promise(resolve => setTimeout(resolve, delay));
+                    return this.client(config);
                 }
 
                 return Promise.reject(error);

@@ -147,19 +147,54 @@ const Product = () => {
   const [showShareOptions, setShowShareOptions] = useState(false);
   const lastScrollY = useRef(0);
 
-  const fetchProductData = async () => {
+  const fetchProductData = async (retryCount = 0) => {
     try {
       setLoading(true);
-      const response = await axios.get(backendUrl + `/api/products/${productId}`);
+      console.log('🔄 Fetching product data...', retryCount > 0 ? `(Retry ${retryCount})` : '');
+      
+      const response = await axios.get(backendUrl + `/api/products/${productId}`, {
+        timeout: 15000, // 15 second timeout
+        headers: {
+          'Cache-Control': 'no-cache',
+          'Pragma': 'no-cache'
+        }
+      });
+      
       if (response.data.success && response.data.data) {
         setProductData(response.data.data);
         setImage(response.data.data.images?.[0]);
+        console.log('✅ Product data loaded successfully');
       } else {
-        toast.error('Failed to fetch product details');
+        throw new Error('Invalid product data received');
       }
     } catch (error) {
       console.error('Error fetching product:', error);
-      toast.error(error.message);
+      
+      // Enhanced retry logic for product page
+      const maxRetries = 3;
+      const isRetryableError = (
+        error.code === 'ECONNABORTED' ||
+        error.code === 'ENOTFOUND' ||
+        error.code === 'ECONNREFUSED' ||
+        !error.response ||
+        (error.response && error.response.status >= 500)
+      );
+      
+      if (isRetryableError && retryCount < maxRetries) {
+        const delay = Math.pow(2, retryCount) * 1000; // 1s, 2s, 4s
+        console.warn(`⚠️ Product API error - retrying in ${delay}ms... (attempt ${retryCount + 1}/${maxRetries})`);
+        
+        setTimeout(() => {
+          fetchProductData(retryCount + 1);
+        }, delay);
+        return; // Don't set loading to false yet
+      } else {
+        // Show user-friendly error message
+        const errorMessage = error.response?.data?.message || 
+                            error.message || 
+                            'Failed to load product details. Please check your connection and try again.';
+        toast.error(errorMessage);
+      }
     } finally {
       setLoading(false);
     }

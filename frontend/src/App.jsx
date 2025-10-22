@@ -22,6 +22,8 @@ import WithClickSpark from './components/WithClickSpark'
 import { AuthProvider } from './context/AuthContext'
 import ShopContextProvider from './context/ShopContext'
 import AuthCheck from './components/AuthCheck'
+import NetworkStatusIndicator from './components/NetworkStatusIndicator'
+import ErrorBoundary from './components/ErrorBoundary'
 
 // Import policy pages
 import TermsAndConditions from './pages/policies/TermsAndConditions'
@@ -34,20 +36,22 @@ export const backendUrl = import.meta.env.VITE_BACKEND_URL || 'https://api.jjtex
 
 const App = () => {
   return (
-    <AuthProvider>
-      <ShopContextProvider>
-        <LoadingProvider>
-          <WithClickSpark
-            sparkColor="#FF69B4"
-            sparkSize={12}
-            sparkRadius={20}
-            sparkCount={10}
-            duration={500}
-            easing="ease-out"
-            extraScale={1.2}
-          >
+    <ErrorBoundary>
+      <AuthProvider>
+        <ShopContextProvider>
+          <LoadingProvider>
+            <WithClickSpark
+              sparkColor="#FF69B4"
+              sparkSize={12}
+              sparkRadius={20}
+              sparkCount={10}
+              duration={500}
+              easing="ease-out"
+              extraScale={1.2}
+            >
             <div className='min-h-screen bg-white'>
               <LoadingScreen />
+              <NetworkStatusIndicator />
               <div className='px-4 sm:px-[5vw] md:px-[7vw] lg:px-[9vw] pt-[160px] sm:pt-[180px]'>
                 <ToastContainer />
                 <Navbar />
@@ -77,10 +81,11 @@ const App = () => {
                 <Footer />
               </div>
             </div>
-          </WithClickSpark>
-        </LoadingProvider>
-      </ShopContextProvider>
-    </AuthProvider>
+            </WithClickSpark>
+          </LoadingProvider>
+        </ShopContextProvider>
+      </AuthProvider>
+    </ErrorBoundary>
   )
 }
 

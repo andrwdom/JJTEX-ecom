@@ -16,15 +16,23 @@ const LoadingScreen = () => {
       setTimeout(() => setShowLogo(true), 400); // Show logo after bg starts transitioning
     }, 400);
 
-    // Hide loading screen after animation
+    // Hide loading screen after animation with fallback timeout
     const timer = setTimeout(() => {
       setIsVisible(false);
       setIsLoading(false);
-    }, 2000);
+    }, 3000); // Increased to 3 seconds for better UX
+
+    // Fallback timeout to ensure loading screen doesn't stay forever
+    const fallbackTimer = setTimeout(() => {
+      console.warn('⚠️ Loading screen fallback timeout - forcing hide');
+      setIsVisible(false);
+      setIsLoading(false);
+    }, 10000); // 10 second fallback
 
     return () => {
       clearTimeout(timer);
       clearTimeout(bgTimer);
+      clearTimeout(fallbackTimer);
     };
   }, [setIsLoading]);
 

@@ -25,6 +25,11 @@
 **/.env
 **/.env.*
 
+# Firebase service account keys (SECURITY)
+**/firebase-adminsdk-*.json
+**/*firebase*service*account*.json
+**/*-firebase-adminsdk-*.json
+
 # Build directories
 **/dist/
 **/build/

@@ -169,16 +169,15 @@ const ShopContextProvider = (props) => {
         return totalAmount;
     };
 
-    const getProductsData = async () => {
+    const getProductsData = async (retryCount = 0) => {
         try {
             setIsLoading(true);
-            console.log('🔄 Fetching products...');
-            console.log('🔄 Current products state before fetch:', products, 'Type:', typeof products);
+            console.log('🔄 Fetching products...', retryCount > 0 ? `(Retry ${retryCount})` : '');
             
             // Add request timestamp for debugging
             const requestStart = Date.now();
             
-            // Use new API service
+            // Use new API service with enhanced error handling
             const response = await apiService.getProducts();
             const requestTime = Date.now() - requestStart;
             console.log(`📦 API Response received in ${requestTime}ms:`, response);
@@ -204,21 +203,31 @@ const ShopContextProvider = (props) => {
             console.error('❌ Error fetching products:', error);
             const errorInfo = apiService.handleError(error);
             
-            // Handle timeout specifically with retry limit
-            if (error.code === 'ECONNABORTED') {
-                const retryCount = error.config?.__retryCount || 0;
-                if (retryCount < 2) { // Max 2 retries
-                    console.warn(`⚠️ API timeout - retrying in 3 seconds... (attempt ${retryCount + 1}/2)`);
-                    error.config.__retryCount = retryCount + 1;
-                    setTimeout(() => {
-                        getProductsData();
-                    }, 3000);
-                } else {
-                    console.error('❌ Max retries reached for products API');
-                    toast.error('Failed to load products. Please refresh the page.');
-                }
+            // Enhanced retry logic with exponential backoff
+            const maxRetries = 3;
+            const isRetryableError = (
+                error.code === 'ECONNABORTED' ||
+                error.code === 'ENOTFOUND' ||
+                error.code === 'ECONNREFUSED' ||
+                !error.response ||
+                (error.response && error.response.status >= 500)
+            );
+            
+            if (isRetryableError && retryCount < maxRetries) {
+                const delay = Math.pow(2, retryCount) * 1000; // 1s, 2s, 4s
+                console.warn(`⚠️ API error - retrying in ${delay}ms... (attempt ${retryCount + 1}/${maxRetries})`);
+                
+                setTimeout(() => {
+                    getProductsData(retryCount + 1);
+                }, delay);
+                return; // Don't set loading to false yet
             } else {
-                toast.error(errorInfo.message || 'Failed to fetch products');
+                // Show user-friendly error message
+                const errorMessage = errorInfo.message || 'Failed to load products. Please check your connection and try again.';
+                toast.error(errorMessage);
+                
+                // Set empty products array to prevent UI blocking
+                safeSetProducts([]);
             }
         } finally {
             setIsLoading(false);
