@@ -320,7 +320,7 @@ app.use(helmet({
             "img-src": ["'self'", "data:", "blob:", "https:", "http:"],
             "script-src": ["'self'"],
             "style-src": ["'self'", "'unsafe-inline'"],
-            "connect-src": ["'self'", "https://shithaa.in", "https://admin.shithaa.in", "https://shitha-frontend.vercel.app", "https://admin.shithaa.com", "https://shithaa.com", "http://localhost:5173", "http://localhost:5174", "http://localhost:3000", "http://localhost:3001"],
+            "connect-src": ["'self'", "https://shithaa.in", "https://admin.shithaa.in", "https://shitha-frontend.vercel.app", "https://admin.shithaa.com", "https://shithaa.com", "https://api.jjtextiles.com", "https://jjtextiles.com", "https://admin.jjtextiles.com", "http://localhost:5173", "http://localhost:5174", "http://localhost:3000", "http://localhost:3001"],
             "frame-ancestors": ["'none'"],
         },
     }
