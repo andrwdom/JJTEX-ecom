@@ -50,6 +50,31 @@ export const getProductById = async (req, res) => {
             product.image = product.images; // Frontend expects 'image' array
         }
         
+        // 🔧 IMAGE URL FIX: Transform image URLs to use correct path
+        if (product.images && Array.isArray(product.images)) {
+            product.images = product.images.map(img => {
+                if (img && img.includes('/images/products/')) {
+                    // Convert /images/products/ to /uploads/products/
+                    return img.replace('/images/products/', '/uploads/products/');
+                } else if (img && !img.startsWith('http')) {
+                    return img.startsWith('/uploads/') ? img : `/uploads/${img}`;
+                }
+                return img;
+            });
+        }
+        
+        // Also fix the 'image' field if it exists
+        if (product.image && Array.isArray(product.image)) {
+            product.image = product.image.map(img => {
+                if (img && img.includes('/images/products/')) {
+                    return img.replace('/images/products/', '/uploads/products/');
+                } else if (img && !img.startsWith('http')) {
+                    return img.startsWith('/uploads/') ? img : `/uploads/${img}`;
+                }
+                return img;
+            });
+        }
+        
         // Add cache busting headers
         res.set({
             'Cache-Control': 'no-cache, no-store, must-revalidate',
@@ -57,7 +82,12 @@ export const getProductById = async (req, res) => {
             'Expires': '0'
         });
         
-        res.status(200).json({ product });
+        // 🔧 JJTEX COMPATIBILITY: Return format expected by frontend
+        res.status(200).json({ 
+            success: true,
+            data: product,
+            product: product // Keep both for compatibility
+        });
     } catch (error) {
         console.error('Get Product By ID Error:', error);
         res.status(500).json({ error: error.message });
