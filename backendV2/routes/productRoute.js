@@ -4,6 +4,7 @@ import {
     singleProduct,
     getProductById,
     getAllProducts,
+    getProductsFast,
     addProduct,
     removeProductV2,
     updateProductV2,
@@ -18,6 +19,9 @@ const productRouter = express.Router();
 
 // Health check route
 productRouter.get('/health', healthCheck); // GET /api/products/health
+
+// Fast load route for frontend
+productRouter.get('/fast', getProductsFast); // GET /api/products/fast
 
 // Product ordering routes (must come before :id routes to avoid conflict)
 productRouter.put('/reorder', verifyToken, reorderProducts);

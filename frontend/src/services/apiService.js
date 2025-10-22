@@ -117,9 +117,16 @@ class ApiService {
 
     // Products API
     async getProducts(params = {}) {
-        const endpoint = this.useLegacy 
-            ? getApiEndpoint('PRODUCTS', 'LEGACY_LIST')
-            : getApiEndpoint('PRODUCTS', 'LIST');
+        // Use fast endpoint for initial load if no specific filters
+        const useFastEndpoint = !params.search && !params.categorySlug && !params.size && 
+                               !params.minPrice && !params.maxPrice && !params.isNewArrival && 
+                               !params.isBestSeller && !params.sleeveType;
+        
+        const endpoint = useFastEndpoint 
+            ? '/api/products/fast'
+            : (this.useLegacy 
+                ? getApiEndpoint('PRODUCTS', 'LEGACY_LIST')
+                : getApiEndpoint('PRODUCTS', 'LIST'));
         
         const response = await this.get(endpoint, params);
         

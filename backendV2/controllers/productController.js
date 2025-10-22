@@ -164,12 +164,14 @@ export const getAllProducts = async (req, res) => {
         const skip = (pageNum - 1) * limitNum;
         
         // 🔧 PRODUCTION OPTIMIZATION: Use parallel queries for better performance
+        // For initial load, prioritize speed over exact count
         const [total, products] = await Promise.all([
             productModel.countDocuments(filter),
             productModel.find(filter)
                 .sort(sort)
                 .skip(skip)
                 .limit(limitNum)
+                .select('_id customId name price description images category categorySlug subCategory type sleeveType sizes availableSizes features rating reviews isNewArrival isBestSeller inStock bestseller createdAt updatedAt displayOrder')
                 .lean()
         ]);
             
@@ -177,8 +179,15 @@ export const getAllProducts = async (req, res) => {
         const productsWithCustomId = products.map(p => {
             const product = { ...p, customId: p.customId };
             
-            // 🔧 JJTEX COMPATIBILITY: Add 'image' field for frontend compatibility
-            if (product.images && !product.image) {
+            // 🔧 JJTEX COMPATIBILITY: Fix image URLs and add 'image' field for frontend compatibility
+            if (product.images && Array.isArray(product.images)) {
+                product.images = product.images.map(img => {
+                    // Fix image URLs to use correct path
+                    if (img && !img.startsWith('http')) {
+                        return img.startsWith('/uploads/') ? img : `/uploads/${img}`;
+                    }
+                    return img;
+                });
                 product.image = product.images; // Frontend expects 'image' array
             }
             
@@ -283,10 +292,17 @@ export const listProducts = async (req, res) => {
         const total = await productModel.countDocuments(query);
         const pages = Math.ceil(total / limit);
 
-        // 🔧 JJTEX COMPATIBILITY: Add 'image' field for frontend compatibility
+        // 🔧 JJTEX COMPATIBILITY: Fix image URLs and add 'image' field for frontend compatibility
         const productsWithCompatibility = products.map(p => {
             const product = { ...p };
-            if (product.images && !product.image) {
+            if (product.images && Array.isArray(product.images)) {
+                product.images = product.images.map(img => {
+                    // Fix image URLs to use correct path
+                    if (img && !img.startsWith('http')) {
+                        return img.startsWith('/uploads/') ? img : `/uploads/${img}`;
+                    }
+                    return img;
+                });
                 product.image = product.images; // Frontend expects 'image' array
             }
             return product;
@@ -367,6 +383,69 @@ export const reorderProducts = async (req, res) => {
       message: error.message || 'Failed to reorder products' 
     });
   }
+};
+
+// Fast initial load endpoint for frontend
+export const getProductsFast = async (req, res) => {
+    try {
+        console.log('🚀 Fast products load requested');
+        const startTime = Date.now();
+        
+        // Minimal query for fastest response
+        const products = await productModel.find({ inStock: true })
+            .select('_id customId name price images category categorySlug subCategory type sizes isNewArrival isBestSeller bestseller displayOrder')
+            .sort({ displayOrder: 1, createdAt: -1 })
+            .limit(50) // Limit for faster response
+            .lean();
+        
+        // Quick processing with proper image URLs
+        const processedProducts = products.map(p => ({
+            ...p,
+            customId: p.customId,
+            image: p.images?.map(img => {
+                // Fix image URLs to use correct path
+                if (img && !img.startsWith('http')) {
+                    return img.startsWith('/uploads/') ? img : `/uploads/${img}`;
+                }
+                return img;
+            }) || [], // Frontend compatibility
+            images: p.images?.map(img => {
+                // Fix image URLs to use correct path
+                if (img && !img.startsWith('http')) {
+                    return img.startsWith('/uploads/') ? img : `/uploads/${img}`;
+                }
+                return img;
+            }) || [],
+            sizes: p.sizes?.map(sizeObj => ({
+                ...sizeObj,
+                availableStock: Math.max(0, (sizeObj.stock || 0) - (sizeObj.reserved || 0))
+            })) || []
+        }));
+        
+        const responseTime = Date.now() - startTime;
+        console.log(`⚡ Fast products loaded in ${responseTime}ms`);
+        
+        res.set({
+            'Cache-Control': 'public, max-age=300',
+            'X-Response-Time': `${responseTime}ms`
+        });
+        
+        res.json({
+            success: true,
+            products: processedProducts,
+            data: processedProducts,
+            total: processedProducts.length,
+            fastLoad: true,
+            responseTime: `${responseTime}ms`
+        });
+        
+    } catch (error) {
+        console.error('Fast products load error:', error);
+        res.status(500).json({ 
+            success: false,
+            error: error.message 
+        });
+    }
 };
 
 // Health check endpoint for products API
