@@ -3,6 +3,7 @@ import path from "path";
 import imageOptimizer from '../utils/imageOptimizer.js';
 import productModel from '../models/productModel.js';
 import Category from '../models/Category.js';
+import redisService from '../services/redisService.js';
 
 
 // GET /api/products/:id or /api/products/custom/:customId - RESTful single product fetch
@@ -81,6 +82,35 @@ export const getAllProducts = async (req, res) => {
             size,
             sleeveType
         } = req.query;
+
+        // 🔧 CACHE KEY: Create unique cache key based on query parameters
+        const cacheKey = `products:${JSON.stringify({
+            category: category || 'all',
+            categorySlug: categorySlug || 'all',
+            page: parseInt(page),
+            limit: parseInt(limit),
+            search: search || '',
+            isNewArrival: isNewArrival || false,
+            isBestSeller: isBestSeller || false,
+            sortBy,
+            minPrice: minPrice || '',
+            maxPrice: maxPrice || '',
+            size: size || '',
+            sleeveType: sleeveType || ''
+        })}`;
+
+        // Try to get from cache first
+        const cachedResult = await redisService.get(cacheKey);
+        if (cachedResult) {
+            console.log('📦 Cache HIT: Products found in Redis');
+            res.set({
+                'Cache-Control': 'public, max-age=300', // 5 minutes
+                'X-Cache-Status': 'HIT'
+            });
+            return res.status(200).json(cachedResult);
+        }
+
+        console.log('📭 Cache MISS: Fetching products from database');
         const filter = {};
         if (category) {
             console.log('Filtering by category:', category);
@@ -168,13 +198,26 @@ export const getAllProducts = async (req, res) => {
         
         // Debug logging removed for production performance
         
-        res.status(200).json({ 
+        // 🔧 JJTEX COMPATIBILITY: Return format that matches frontend expectations
+        const result = { 
+            success: true,
             products: productsWithCustomId,
+            data: productsWithCustomId, // Frontend compatibility
             total,
             page: pageNum,
             pages: Math.ceil(total / limitNum),
             limit: limitNum
+        };
+
+        // Cache the result for 5 minutes (300 seconds)
+        await redisService.set(cacheKey, result, 300);
+        
+        res.set({
+            'Cache-Control': 'public, max-age=300', // 5 minutes
+            'X-Cache-Status': 'MISS'
         });
+        
+        res.status(200).json(result);
     } catch (error) {
         console.error('Get All Products Error:', error);
         res.status(500).json({ error: error.message });
@@ -324,6 +367,45 @@ export const reorderProducts = async (req, res) => {
       message: error.message || 'Failed to reorder products' 
     });
   }
+};
+
+// Health check endpoint for products API
+export const healthCheck = async (req, res) => {
+    try {
+        const startTime = Date.now();
+        
+        // Quick database ping
+        const dbStart = Date.now();
+        await productModel.findOne().lean();
+        const dbTime = Date.now() - dbStart;
+        
+        // Redis ping
+        const redisStart = Date.now();
+        const redisAvailable = redisService.isAvailable();
+        const redisTime = Date.now() - redisStart;
+        
+        const totalTime = Date.now() - startTime;
+        
+        res.json({
+            success: true,
+            status: 'healthy',
+            timestamp: new Date().toISOString(),
+            performance: {
+                totalTime: `${totalTime}ms`,
+                databaseTime: `${dbTime}ms`,
+                redisTime: `${redisTime}ms`,
+                redisAvailable
+            },
+            version: '2.0.0'
+        });
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            status: 'unhealthy',
+            error: error.message,
+            timestamp: new Date().toISOString()
+        });
+    }
 };
 
 export const moveProduct = async (req, res) => {
@@ -530,6 +612,10 @@ export const addProduct = async (req, res) => {
     const savedProduct = await newProduct.save();
     console.log('🔧 DEBUG: Product saved successfully:', savedProduct.customId);
     
+    // Invalidate products cache when product is added
+    await redisService.delPattern('products:*');
+    console.log('🗑️ Cache invalidated: All products cache cleared');
+    
     res.status(201).json({
       success: true,
       message: 'Product added successfully',
@@ -685,6 +771,10 @@ export const updateProductV2 = async (req, res) => {
     
     console.log('🔧 DEBUG: Product updated successfully:', updatedProduct.customId);
     
+    // Invalidate products cache when product is updated
+    await redisService.delPattern('products:*');
+    console.log('🗑️ Cache invalidated: All products cache cleared');
+    
     res.json({
       success: true,
       message: 'Product updated successfully',
@@ -724,6 +814,10 @@ export const removeProductV2 = async (req, res) => {
     }
     
     console.log('🔧 DEBUG: Product deleted successfully:', product.customId);
+    
+    // Invalidate products cache when product is deleted
+    await redisService.delPattern('products:*');
+    console.log('🗑️ Cache invalidated: All products cache cleared');
     
     res.json({
       success: true,

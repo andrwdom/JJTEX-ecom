@@ -17,7 +17,7 @@ class ApiService {
         // Create axios instance
         this.client = axios.create({
             baseURL: this.baseURL,
-            timeout: 30000,
+            timeout: 10000, // Reduced from 30s to 10s for better UX
             headers: {
                 'Content-Type': 'application/json',
             },

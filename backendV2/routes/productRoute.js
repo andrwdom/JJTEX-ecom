@@ -8,12 +8,16 @@ import {
     removeProductV2,
     updateProductV2,
     reorderProducts,
-    moveProduct
+    moveProduct,
+    healthCheck
 } from '../controllers/productController.js'
 import { verifyToken } from '../middleware/auth.js'
 import multer from '../middleware/multer.js'
 
 const productRouter = express.Router();
+
+// Health check route
+productRouter.get('/health', healthCheck); // GET /api/products/health
 
 // Product ordering routes (must come before :id routes to avoid conflict)
 productRouter.put('/reorder', verifyToken, reorderProducts);

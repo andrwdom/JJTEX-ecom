@@ -175,9 +175,13 @@ const ShopContextProvider = (props) => {
             console.log('🔄 Fetching products...');
             console.log('🔄 Current products state before fetch:', products, 'Type:', typeof products);
             
+            // Add request timestamp for debugging
+            const requestStart = Date.now();
+            
             // Use new API service
             const response = await apiService.getProducts();
-            console.log('📦 API Response:', response);
+            const requestTime = Date.now() - requestStart;
+            console.log(`📦 API Response received in ${requestTime}ms:`, response);
             
             // Handle both response formats with additional safety checks
             if (response && response.products) {
@@ -200,12 +204,19 @@ const ShopContextProvider = (props) => {
             console.error('❌ Error fetching products:', error);
             const errorInfo = apiService.handleError(error);
             
-            // Handle timeout specifically
+            // Handle timeout specifically with retry limit
             if (error.code === 'ECONNABORTED') {
-                console.warn('⚠️ API timeout - retrying in 5 seconds...');
-                setTimeout(() => {
-                    getProductsData();
-                }, 5000);
+                const retryCount = error.config?.__retryCount || 0;
+                if (retryCount < 2) { // Max 2 retries
+                    console.warn(`⚠️ API timeout - retrying in 3 seconds... (attempt ${retryCount + 1}/2)`);
+                    error.config.__retryCount = retryCount + 1;
+                    setTimeout(() => {
+                        getProductsData();
+                    }, 3000);
+                } else {
+                    console.error('❌ Max retries reached for products API');
+                    toast.error('Failed to load products. Please refresh the page.');
+                }
             } else {
                 toast.error(errorInfo.message || 'Failed to fetch products');
             }
