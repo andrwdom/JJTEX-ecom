@@ -1,5 +1,6 @@
 import React, { useContext, useEffect, useState } from 'react'
 import { ShopContext } from '../context/ShopContext'
+import { useAuth } from '../context/AuthContext'
 import Title from '../components/Title';
 import axios from 'axios';
 import { toast } from 'react-toastify';
@@ -32,9 +33,10 @@ const OrderStatus = ({ status }) => {
 
 const Orders = () => {
   const { backendUrl, token, currency, setToken, navigate } = useContext(ShopContext);
+  const { user } = useAuth();
   const [orderData, setorderData] = useState([]);
   const [showContact, setShowContact] = useState(false);
-  const [user, setUser] = useState(null);
+  const [userData, setUserData] = useState(null);
   const [showChangePassword, setShowChangePassword] = useState(false);
   const [passwords, setPasswords] = useState({ old: '', new: '', confirm: '' });
   const [loading, setLoading] = useState(false);
@@ -44,8 +46,20 @@ const Orders = () => {
 
   const loadOrderData = async () => {
     try {
-      if (!token) return null;
-      const response = await axios.post(backendUrl + '/api/order/userorders', { userId: JSON.parse(atob(token.split('.')[1])).id }, { headers: { token } });
+      if (!token || !user?._id) {
+        console.warn('No token or user ID available');
+        return null;
+      }
+      
+      // ✅ Use user._id from AuthContext instead of decoding token
+      console.log('📋 Loading orders for user:', user._id);
+      
+      const response = await axios.post(
+        backendUrl + '/api/order/userorders',
+        { userId: user._id },
+        { headers: { token } }
+      );
+      
       if (response.data.success) {
         let allOrdersItem = [];
         Array.isArray(response.data.orders) && response.data.orders.map((order) => {
@@ -70,9 +84,9 @@ const Orders = () => {
     try {
       const res = await axios.get(backendUrl + '/api/user/info', { headers: { token } });
       console.log('User info response:', res.data);
-      setUser(res.data.user);
+      setUserData(res.data.user);
     } catch (err) {
-      setUser(null);
+      setUserData(null);
       toast.error('Failed to load user info');
     }
   };
@@ -144,7 +158,7 @@ const Orders = () => {
     }
     loadOrderData();
     fetchUserInfo();
-  }, [token]);
+  }, [token, user?._id]);
 
   return (
     <div className='max-w-[1280px] mx-auto px-4'>
@@ -153,16 +167,16 @@ const Orders = () => {
           <Title text1={'MY'} text2={'PROFILE'} />
         </div>
         <div className='bg-white rounded-lg shadow-sm border p-6 mb-10 flex flex-col md:flex-row md:items-center md:justify-between gap-6'>
-          {user ? (
+          {userData ? (
             <>
               <div>
                 <div className='mb-2 flex items-center gap-2'>
                   <span className='font-semibold text-gray-700'>Username:</span>
-                  <span className='text-gray-600'>{user.name}</span>
+                  <span className='text-gray-600'>{userData.name}</span>
                 </div>
                 <div className='mb-2 flex items-center gap-2'>
                   <span className='font-semibold text-gray-700'>Email:</span>
-                  <span className='text-gray-600'>{user.email}</span>
+                  <span className='text-gray-600'>{userData.email}</span>
                 </div>
                 <button
                   className='mt-2 px-4 py-1 bg-pink-100 text-pink-600 rounded hover:bg-pink-200 text-sm'

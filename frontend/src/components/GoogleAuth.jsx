@@ -2,12 +2,14 @@ import React, { useState } from 'react';
 import { signInWithPopup, signOut } from 'firebase/auth';
 import { auth, googleProvider } from '../config/firebase';
 import { ShopContext } from '../context/ShopContext';
+import { useAuth } from '../context/AuthContext';
 import { toast } from 'react-toastify';
 import axios from 'axios';
 
 const GoogleAuth = () => {
   const [isLoading, setIsLoading] = useState(false);
   const { setToken, navigate, backendUrl } = React.useContext(ShopContext);
+  const { login } = useAuth();
 
   const handleGoogleSignIn = async () => {
     setIsLoading(true);
@@ -25,9 +27,23 @@ const GoogleAuth = () => {
       });
 
       if (response.data.success) {
-        // Set the token in context and localStorage
-        setToken(response.data.data.token);
-        localStorage.setItem('token', response.data.data.token);
+        const { token, user: userData } = response.data.data;
+        
+        // Store token in ShopContext and localStorage
+        setToken(token);
+        localStorage.setItem('token', token);
+        
+        // ✅ IMPORTANT: Store complete user object (includes _id, email, name, role)
+        localStorage.setItem('user', JSON.stringify(userData));
+        
+        // Update AuthContext with complete user data
+        login(userData);
+        
+        console.log('✅ User authenticated successfully:', {
+          userId: userData._id,
+          email: userData.email,
+          name: userData.name
+        });
         
         toast.success('Successfully signed in with Google!');
         navigate('/');
@@ -42,7 +58,7 @@ const GoogleAuth = () => {
       } else if (error.code === 'auth/popup-blocked') {
         toast.error('Popup was blocked. Please allow popups for this site.');
       } else {
-        toast.error('Failed to sign in with Google. Please try again.');
+        toast.error(error.response?.data?.message || 'Failed to sign in with Google. Please try again.');
       }
     } finally {
       setIsLoading(false);

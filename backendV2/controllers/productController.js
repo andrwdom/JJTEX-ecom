@@ -45,34 +45,9 @@ export const getProductById = async (req, res) => {
         console.log('🔧 DEBUG: Product sizes after processing:', JSON.stringify(product.sizes, null, 2));
         console.log('🔧 DEBUG: Total sizes count:', product.sizes ? product.sizes.length : 0);
         
-        // 🔧 JJTEX COMPATIBILITY: Add 'image' field for frontend compatibility
+        // SIMPLIFIED: Minimal image processing for speed
         if (product.images && !product.image) {
             product.image = product.images; // Frontend expects 'image' array
-        }
-        
-        // 🔧 IMAGE URL FIX: Transform image URLs to use correct path
-        if (product.images && Array.isArray(product.images)) {
-            product.images = product.images.map(img => {
-                if (img && img.includes('/images/products/')) {
-                    // Convert /images/products/ to /uploads/products/
-                    return img.replace('/images/products/', '/uploads/products/');
-                } else if (img && !img.startsWith('http')) {
-                    return img.startsWith('/uploads/') ? img : `/uploads/${img}`;
-                }
-                return img;
-            });
-        }
-        
-        // Also fix the 'image' field if it exists
-        if (product.image && Array.isArray(product.image)) {
-            product.image = product.image.map(img => {
-                if (img && img.includes('/images/products/')) {
-                    return img.replace('/images/products/', '/uploads/products/');
-                } else if (img && !img.startsWith('http')) {
-                    return img.startsWith('/uploads/') ? img : `/uploads/${img}`;
-                }
-                return img;
-            });
         }
         
         // Add cache busting headers
@@ -113,21 +88,8 @@ export const getAllProducts = async (req, res) => {
             sleeveType
         } = req.query;
 
-        // 🔧 CACHE KEY: Create unique cache key based on query parameters
-        const cacheKey = `products:${JSON.stringify({
-            category: category || 'all',
-            categorySlug: categorySlug || 'all',
-            page: parseInt(page),
-            limit: parseInt(limit),
-            search: search || '',
-            isNewArrival: isNewArrival || false,
-            isBestSeller: isBestSeller || false,
-            sortBy,
-            minPrice: minPrice || '',
-            maxPrice: maxPrice || '',
-            size: size || '',
-            sleeveType: sleeveType || ''
-        })}`;
+        // OPTIMIZED CACHE KEY: Simplified cache key for better performance
+        const cacheKey = `products:${category || 'all'}:${page}:${limit}:${search || ''}:${isNewArrival || ''}:${isBestSeller || ''}`;
 
         // Try to get from cache first
         const cachedResult = await redisService.get(cacheKey);
@@ -193,50 +155,36 @@ export const getAllProducts = async (req, res) => {
         const limitNum = parseInt(limit);
         const skip = (pageNum - 1) * limitNum;
         
-        // 🔧 PRODUCTION OPTIMIZATION: Use parallel queries for better performance
-        // For initial load, prioritize speed over exact count
+        // ULTRA-OPTIMIZED: Minimal field selection for maximum speed
         const [total, products] = await Promise.all([
             productModel.countDocuments(filter),
             productModel.find(filter)
                 .sort(sort)
                 .skip(skip)
                 .limit(limitNum)
-                .select('_id customId name price description images category categorySlug subCategory type sleeveType sizes availableSizes features rating reviews isNewArrival isBestSeller inStock bestseller createdAt updatedAt displayOrder')
+                .select('_id customId name price images category categorySlug subCategory type sizes isNewArrival isBestSeller bestseller displayOrder')
                 .lean()
         ]);
             
-        // Always include customId and calculate available stock in the response
-        const productsWithCustomId = products.map(p => {
-            const product = { ...p, customId: p.customId };
-            
-            // 🔧 JJTEX COMPATIBILITY: Fix image URLs and add 'image' field for frontend compatibility
-            if (product.images && Array.isArray(product.images)) {
-                product.images = product.images.map(img => {
-                    // Fix image URLs to use correct path
-                    if (img && img.includes('/images/products/')) {
-                        // Convert /images/products/ to /uploads/products/
-                        return img.replace('/images/products/', '/uploads/products/');
-                    } else if (img && !img.startsWith('http')) {
-                        return img.startsWith('/uploads/') ? img : `/uploads/${img}`;
-                    }
-                    return img;
-                });
-                product.image = product.images; // Frontend expects 'image' array
-            }
-            
-            // 🔑 CRITICAL FIX: Calculate available stock (stock - reserved) for each size
-            if (product.sizes && Array.isArray(product.sizes)) {
-                product.sizes = product.sizes.map(sizeObj => ({
-                    ...sizeObj,
-                    availableStock: Math.max(0, (sizeObj.stock || 0) - (sizeObj.reserved || 0)),
-                    // Keep original values for reference
-                    originalStock: sizeObj.stock || 0,
-                    reserved: sizeObj.reserved || 0
-                }));
-            }
-            
-            return product;
-        });
+        // SIMPLIFIED PROCESSING: Minimal transformations for speed
+        const productsWithCustomId = products.map(p => ({
+            _id: p._id,
+            customId: p.customId,
+            name: p.name,
+            price: p.price,
+            category: p.category,
+            categorySlug: p.categorySlug,
+            subCategory: p.subCategory,
+            type: p.type,
+            isNewArrival: p.isNewArrival,
+            isBestSeller: p.isBestSeller,
+            bestseller: p.bestseller,
+            // Simplified image handling - no complex URL processing
+            image: p.images || [],
+            images: p.images || [],
+            // Simplified sizes - no complex stock calculations
+            sizes: p.sizes || []
+        }));
         
         // Debug logging removed for production performance
         
@@ -421,68 +369,79 @@ export const reorderProducts = async (req, res) => {
   }
 };
 
-// Fast initial load endpoint for frontend
+// Ultra-fast initial load endpoint for frontend - OPTIMIZED VERSION
 export const getProductsFast = async (req, res) => {
     try {
-        console.log('🚀 Fast products load requested');
+        console.log('🚀 Ultra-fast products load requested');
         const startTime = Date.now();
         
-        // Minimal query for fastest response
+        // Check cache first for ultra-fast response
+        const cacheKey = 'products:fast:all';
+        const cachedResult = await redisService.get(cacheKey);
+        if (cachedResult) {
+            console.log('⚡ Cache HIT: Ultra-fast products from Redis');
+            res.set({
+                'Cache-Control': 'public, max-age=600', // 10 minutes cache
+                'X-Cache-Status': 'HIT',
+                'X-Response-Time': `${Date.now() - startTime}ms`
+            });
+            return res.status(200).json(cachedResult);
+        }
+        
+        console.log('📭 Cache MISS: Fetching from database');
+        
+        // ULTRA-MINIMAL query - only essential fields
         const products = await productModel.find({ inStock: true })
             .select('_id customId name price images category categorySlug subCategory type sizes isNewArrival isBestSeller bestseller displayOrder')
             .sort({ displayOrder: 1, createdAt: -1 })
-            .limit(50) // Limit for faster response
+            .limit(30) // Reduced from 50 to 30 for speed
             .lean();
         
-        // Quick processing with proper image URLs
+        // MINIMAL processing - only essential transformations
         const processedProducts = products.map(p => ({
-            ...p,
+            _id: p._id,
             customId: p.customId,
-            image: p.images?.map(img => {
-                // Fix image URLs to use correct path
-                if (img && img.includes('/images/products/')) {
-                    // Convert /images/products/ to /uploads/products/
-                    return img.replace('/images/products/', '/uploads/products/');
-                } else if (img && !img.startsWith('http')) {
-                    return img.startsWith('/uploads/') ? img : `/uploads/${img}`;
-                }
-                return img;
-            }) || [], // Frontend compatibility
-            images: p.images?.map(img => {
-                // Fix image URLs to use correct path
-                if (img && img.includes('/images/products/')) {
-                    // Convert /images/products/ to /uploads/products/
-                    return img.replace('/images/products/', '/uploads/products/');
-                } else if (img && !img.startsWith('http')) {
-                    return img.startsWith('/uploads/') ? img : `/uploads/${img}`;
-                }
-                return img;
-            }) || [],
-            sizes: p.sizes?.map(sizeObj => ({
-                ...sizeObj,
-                availableStock: Math.max(0, (sizeObj.stock || 0) - (sizeObj.reserved || 0))
-            })) || []
+            name: p.name,
+            price: p.price,
+            category: p.category,
+            categorySlug: p.categorySlug,
+            subCategory: p.subCategory,
+            type: p.type,
+            isNewArrival: p.isNewArrival,
+            isBestSeller: p.isBestSeller,
+            bestseller: p.bestseller,
+            // Simplified image handling - no complex URL processing
+            image: p.images || [],
+            images: p.images || [],
+            // Simplified sizes - no complex stock calculations
+            sizes: p.sizes || []
         }));
         
         const responseTime = Date.now() - startTime;
-        console.log(`⚡ Fast products loaded in ${responseTime}ms`);
+        console.log(`⚡ Ultra-fast products loaded in ${responseTime}ms`);
         
-        res.set({
-            'Cache-Control': 'public, max-age=300',
-            'X-Response-Time': `${responseTime}ms`
-        });
-        
-        res.json({
+        const result = {
             success: true,
             products: processedProducts,
             data: processedProducts,
             total: processedProducts.length,
             fastLoad: true,
             responseTime: `${responseTime}ms`
+        };
+        
+        // Cache for 10 minutes
+        await redisService.set(cacheKey, result, 600);
+        
+        res.set({
+            'Cache-Control': 'public, max-age=600', // 10 minutes
+            'X-Cache-Status': 'MISS',
+            'X-Response-Time': `${responseTime}ms`
         });
         
+        res.json(result);
+        
     } catch (error) {
-        console.error('Fast products load error:', error);
+        console.error('Ultra-fast products load error:', error);
         res.status(500).json({ 
             success: false,
             error: error.message 

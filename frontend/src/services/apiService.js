@@ -141,15 +141,15 @@ class ApiService {
         return this.request('DELETE', endpoint);
     }
 
-    // Products API
+    // Products API - OPTIMIZED for speed
     async getProducts(params = {}) {
-        // Use fast endpoint for initial load if no specific filters
-        const useFastEndpoint = !params.search && !params.categorySlug && !params.size && 
-                               !params.minPrice && !params.maxPrice && !params.isNewArrival && 
-                               !params.isBestSeller && !params.sleeveType;
+        // Use ultra-fast endpoint for initial load if no specific filters
+        const useUltraFastEndpoint = !params.search && !params.categorySlug && !params.size && 
+                                    !params.minPrice && !params.maxPrice && !params.isNewArrival && 
+                                    !params.isBestSeller && !params.sleeveType;
         
-        const endpoint = useFastEndpoint 
-            ? '/api/products/fast'
+        const endpoint = useUltraFastEndpoint 
+            ? '/api/products/ultra-fast'  // Use ultra-fast endpoint
             : (this.useLegacy 
                 ? getApiEndpoint('PRODUCTS', 'LEGACY_LIST')
                 : getApiEndpoint('PRODUCTS', 'LIST'));

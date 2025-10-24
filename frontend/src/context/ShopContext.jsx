@@ -31,7 +31,7 @@ const ShopContextProvider = (props) => {
     const [token, setToken] = useState(localStorage.getItem('token') || '');
     const [isLoading, setIsLoading] = useState(false);
     const navigate = useNavigate();
-    const { user } = useAuth();
+    const { user, logout } = useAuth();
 
     // Configure axios defaults and interceptors
     useEffect(() => {
@@ -49,8 +49,13 @@ const ShopContextProvider = (props) => {
                 if (error.response?.status === 401) {
                     // Clear token and cart data
                     localStorage.removeItem('token');
+                    localStorage.removeItem('user');
                     setToken('');
                     setCartItems({});
+                    
+                    // Clear user from AuthContext
+                    logout();
+                    
                     toast.error('Session expired. Please login again.');
                     navigate('/login');
                 }
@@ -62,7 +67,7 @@ const ShopContextProvider = (props) => {
         return () => {
             axios.interceptors.response.eject(interceptor);
         };
-    }, [token, navigate]);
+    }, [token, navigate, logout]);
 
     const addToCart = async (itemId, size) => {
         if (!size) {

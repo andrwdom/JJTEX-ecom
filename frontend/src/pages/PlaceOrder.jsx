@@ -74,26 +74,18 @@ const PlaceOrder = () => {
                 }
             }
 
-            // Get userId from user object or extract from JWT token as fallback
-            let userId = user?._id;
-            console.log('Debug - user object:', user);
-            console.log('Debug - userId from user object:', userId);
-            console.log('Debug - token:', token ? 'present' : 'missing');
+            // ✅ Get userId from user object (set by AuthContext after Firebase login)
+            const userId = user?._id;
             
-            if (!userId && token) {
-                try {
-                    const tokenPayload = JSON.parse(atob(token.split('.')[1]));
-                    console.log('Debug - token payload:', tokenPayload);
-                    userId = tokenPayload.id;
-                    console.log('Debug - userId from token:', userId);
-                } catch (error) {
-                    console.error('Error extracting userId from token:', error);
-                }
-            }
-
-            console.log('Debug - final userId:', userId);
-
+            console.log('📋 Order submission:', {
+                userId,
+                userObject: user,
+                hasToken: !!token,
+                cartItems: itemsArray.length
+            });
+            
             if (!userId) {
+                console.error('❌ User ID is missing:', user);
                 toast.error('User ID not found. Please login again.');
                 navigate('/login');
                 return;

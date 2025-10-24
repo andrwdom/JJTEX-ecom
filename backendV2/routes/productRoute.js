@@ -14,14 +14,16 @@ import {
 } from '../controllers/productController.js'
 import { verifyToken } from '../middleware/auth.js'
 import multer from '../middleware/multer.js'
+import { performanceMonitor } from '../middleware/performanceMonitor.js'
 
 const productRouter = express.Router();
 
 // Health check route
 productRouter.get('/health', healthCheck); // GET /api/products/health
 
-// Fast load route for frontend
-productRouter.get('/fast', getProductsFast); // GET /api/products/fast
+// Ultra-fast load routes for frontend with performance monitoring
+productRouter.get('/fast', performanceMonitor, getProductsFast); // GET /api/products/fast
+productRouter.get('/ultra-fast', performanceMonitor, getProductsFast); // GET /api/products/ultra-fast (alias)
 
 // Product ordering routes (must come before :id routes to avoid conflict)
 productRouter.put('/reorder', verifyToken, reorderProducts);
