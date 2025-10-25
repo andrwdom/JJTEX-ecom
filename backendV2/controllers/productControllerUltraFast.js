@@ -15,7 +15,6 @@ import imageOptimizer from '../utils/imageOptimizer.js';
 import productModel from '../models/productModel.js';
 import Category from '../models/Category.js';
 import redisService from '../services/redisService.js';
-import compression from 'compression';
 
 // =====================================================================================
 // 🚀 ULTRA-FAST PRODUCT LOADING - Amazon-Level Performance

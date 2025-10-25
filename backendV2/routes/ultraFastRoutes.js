@@ -1,5 +1,4 @@
 import express from 'express';
-import compression from 'compression';
 import {
     getProductsUltraFast,
     getProductsInstant,
@@ -12,19 +11,6 @@ import {
 import { verifyToken } from '../middleware/auth.js';
 
 const router = express.Router();
-
-// Apply compression middleware for all routes
-router.use(compression({
-    level: 6, // Balanced compression
-    threshold: 1024, // Only compress responses > 1KB
-    filter: (req, res) => {
-        // Don't compress if already compressed
-        if (req.headers['x-no-compression']) {
-            return false;
-        }
-        return compression.filter(req, res);
-    }
-}));
 
 // =====================================================================================
 // 🚀 ULTRA-FAST PRODUCT ROUTES - Amazon-Level Performance
