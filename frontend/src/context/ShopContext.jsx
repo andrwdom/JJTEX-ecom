@@ -184,11 +184,18 @@ const ShopContextProvider = (props) => {
             const requestStart = Date.now();
             
             // Use ultra-fast API service for Amazon-level performance
-            const response = await ultraFastApiService.getProductsSmart({
-                priority: 'speed',
-                categorySlug: 'all',
-                limit: 30
-            });
+            // Fallback to regular API if ultra-fast fails
+            let response;
+            try {
+                response = await ultraFastApiService.getProductsSmart({
+                    priority: 'speed',
+                    categorySlug: 'all',
+                    limit: 30
+                });
+            } catch (ultraFastError) {
+                console.log('🔄 Ultra-fast failed, falling back to regular API...');
+                response = await apiService.getProducts();
+            }
             const requestTime = Date.now() - requestStart;
             console.log(`⚡ Ultra-fast response in ${requestTime}ms:`, response);
             

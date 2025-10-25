@@ -27,10 +27,9 @@ class UltraFastApiService {
         // Configure axios for ultra-fast requests
         this.axiosInstance = axios.create({
             baseURL: this.baseURL,
-            timeout: 5000, // 5 second timeout
+            timeout: 15000, // 15 second timeout for better reliability
             headers: {
                 'Accept': 'application/json',
-                'Accept-Encoding': 'gzip, deflate, br',
                 'Cache-Control': 'no-cache'
             }
         });
@@ -78,12 +77,7 @@ class UltraFastApiService {
         }
 
         try {
-            const response = await this.axiosInstance.get('/api/products/ultra-fast', {
-                headers: {
-                    'X-Requested-With': 'XMLHttpRequest',
-                    'Accept': 'application/json'
-                }
-            });
+            const response = await this.axiosInstance.get('/api/products/ultra-fast');
 
             const data = response.data;
             
@@ -96,7 +90,21 @@ class UltraFastApiService {
             return data;
         } catch (error) {
             console.error('Ultra-fast products error:', error);
-            throw this.handleError(error);
+            
+            // Fallback to existing fast endpoint
+            try {
+                console.log('🔄 Falling back to /api/products/fast...');
+                const fallbackResponse = await this.axiosInstance.get('/api/products/fast');
+                const fallbackData = fallbackResponse.data;
+                
+                // Cache the fallback response
+                this.setCache(cacheKey, fallbackData);
+                
+                return fallbackData;
+            } catch (fallbackError) {
+                console.error('Fallback also failed:', fallbackError);
+                throw this.handleError(error);
+            }
         }
     }
 
@@ -192,28 +200,33 @@ class UltraFastApiService {
             priority = 'speed' // 'speed' | 'freshness' | 'completeness'
         } = options;
 
-        // If searching, use instant search
-        if (search && search.length >= 2) {
-            return this.searchProductsInstant(search, limit);
-        }
+        try {
+            // If searching, use instant search
+            if (search && search.length >= 2) {
+                return this.searchProductsInstant(search, limit);
+            }
 
-        // If specific category, preload
-        if (categorySlug !== 'all') {
-            return this.preloadProducts(categorySlug, limit);
-        }
+            // If specific category, preload
+            if (categorySlug !== 'all') {
+                return this.preloadProducts(categorySlug, limit);
+            }
 
-        // Default to ultra-fast for speed
-        if (priority === 'speed') {
+            // Default to ultra-fast for speed
+            if (priority === 'speed') {
+                return this.getProductsUltraFast();
+            }
+
+            // For freshness, use instant
+            if (priority === 'freshness') {
+                return this.getProductsInstant();
+            }
+
+            // Default fallback
             return this.getProductsUltraFast();
+        } catch (error) {
+            console.error('Ultra-fast smart loading failed:', error);
+            throw error;
         }
-
-        // For freshness, use instant
-        if (priority === 'freshness') {
-            return this.getProductsInstant();
-        }
-
-        // Default fallback
-        return this.getProductsUltraFast();
     }
 
     /**
