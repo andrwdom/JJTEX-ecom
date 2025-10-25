@@ -1,7 +1,7 @@
 import express from 'express'
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
-import { existsSync } from 'fs';
+import { existsSync, readFileSync } from 'fs';
 import dotenv from 'dotenv';
 
 // Load .env file from the correct path FIRST
@@ -43,6 +43,7 @@ import connectDB from './config/mongodb.js'
 import mongoose from 'mongoose'
 import userRouter from './routes/userRoute.js'
 import productRouter from './routes/productRoute.js'
+import ultraFastRoutes from './routes/ultraFastRoutes.js'
 import cartRouter from './routes/cartRoute.js'
 import orderRouter from './routes/orderRoute.js'
 import paymentRouter from './routes/paymentRoute.js'
@@ -81,6 +82,54 @@ import { randomBytes } from 'crypto'
 const app = express()
 const PORT = config.port
 
+// ✅ INITIALIZE FIREBASE ADMIN SDK - CRITICAL FOR AUTHENTICATION
+try {
+  // Check if Firebase is already initialized to avoid duplicate initialization errors
+  if (!admin.apps.length) {
+    // Get the directory path (already imported at top of file)
+    const __dirname = dirname(fileURLToPath(import.meta.url));
+    
+    // Try to load from the root directory first (production deployment)
+    let serviceAccountPath = join(__dirname, '../jjtextiles-ecom-firebase-adminsdk-fbsvc-4e8db84e32.json');
+    
+    // If not found in root, try in backendV2 directory
+    if (!existsSync(serviceAccountPath)) {
+      serviceAccountPath = join(__dirname, 'jjtextiles-ecom-firebase-adminsdk-fbsvc-4e8db84e32.json');
+    }
+    
+    // If still not found, check for env variable
+    if (!existsSync(serviceAccountPath) && process.env.FIREBASE_SERVICE_ACCOUNT_KEY) {
+      try {
+        const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT_KEY);
+        admin.initializeApp({
+          credential: admin.credential.cert(serviceAccount),
+          projectId: 'jjtextiles-ecom'
+        });
+        console.log('✅ Firebase Admin SDK initialized from environment variable');
+      } catch (error) {
+        console.error('❌ Failed to parse FIREBASE_SERVICE_ACCOUNT_KEY:', error.message);
+      }
+    } else if (existsSync(serviceAccountPath)) {
+      // Initialize with file path
+      const serviceAccount = JSON.parse(readFileSync(serviceAccountPath, 'utf8'));
+      admin.initializeApp({
+        credential: admin.credential.cert(serviceAccount),
+        projectId: 'jjtextiles-ecom'
+      });
+      console.log('✅ Firebase Admin SDK initialized successfully from:', serviceAccountPath);
+    } else {
+      console.warn('⚠️  Firebase credentials file not found. Firebase authentication will not work.');
+      console.warn('   Expected file: jjtextiles-ecom-firebase-adminsdk-fbsvc-4e8db84e32.json');
+      console.warn('   Please ensure the credentials file is in the project root or set FIREBASE_SERVICE_ACCOUNT_KEY env variable');
+    }
+  } else {
+    console.log('✅ Firebase Admin SDK already initialized');
+  }
+} catch (error) {
+  console.error('❌ Error initializing Firebase Admin SDK:', error);
+  console.error('   This is required for user authentication to work');
+}
+
 // Environment variables validation (no secrets logged)
 if (process.env.NODE_ENV === 'development') {
   Logger.info('environment_debug', {
@@ -89,7 +138,8 @@ if (process.env.NODE_ENV === 'development') {
     mongodbConfigured: !!process.env.MONGODB_URI,
     jwtConfigured: !!process.env.JWT_SECRET,
     phonepeConfigured: !!process.env.PHONEPE_MERCHANT_ID,
-    phonepeApiConfigured: !!process.env.PHONEPE_API_KEY
+    phonepeApiConfigured: !!process.env.PHONEPE_API_KEY,
+    firebaseInitialized: admin.apps.length > 0
   });
 }
 
@@ -97,6 +147,7 @@ if (process.env.NODE_ENV === 'development') {
 Logger.info('server_starting', {
   port: PORT,
   nodeEnv: process.env.NODE_ENV,
+  firebaseInitialized: admin.apps.length > 0,
   timestamp: new Date().toISOString()
 })
 
@@ -380,7 +431,7 @@ app.use((req, res, next) => {
 
 // 🔧 JJTEX: Static file serving with caching headers for better performance
 // Serve product images from local VPS storage
-const uploadsPath = process.env.UPLOAD_DIR || path.join(process.cwd(), 'uploads');
+const uploadsPath = process.env.UPLOAD_DIR || join(process.cwd(), 'uploads');
 app.use('/uploads', express.static(uploadsPath, {
     maxAge: '1d', // Cache for 1 day
     etag: true,
@@ -434,6 +485,7 @@ app.use('/api/atomic-payment', strictLimiter, atomicPaymentRouter)
 
 // Apply browse rate limiting to product browsing (most common requests)
 app.use('/api/products', browseLimiter, productRouter)
+app.use('/api/products', ultraFastRoutes)
 app.use('/api/categories', browseLimiter, categoryRouter)
 app.use('/api/carousel', browseLimiter, carouselRouter)
 app.use('/api/hero-images', browseLimiter, heroImagesRouter)

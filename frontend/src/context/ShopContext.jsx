@@ -5,6 +5,7 @@ import axios from 'axios'
 import { useAuth } from './AuthContext';
 import { getApiEndpoint, useLegacyEndpoints } from '../config/api.config.js';
 import apiService from '../services/apiService.js';
+import ultraFastApiService from '../services/ultraFastApiService.js';
 
 export const ShopContext = createContext();
 
@@ -177,15 +178,19 @@ const ShopContextProvider = (props) => {
     const getProductsData = async (retryCount = 0) => {
         try {
             setIsLoading(true);
-            console.log('🔄 Fetching products...', retryCount > 0 ? `(Retry ${retryCount})` : '');
+            console.log('🚀 Ultra-fast products loading...', retryCount > 0 ? `(Retry ${retryCount})` : '');
             
             // Add request timestamp for debugging
             const requestStart = Date.now();
             
-            // Use new API service with enhanced error handling
-            const response = await apiService.getProducts();
+            // Use ultra-fast API service for Amazon-level performance
+            const response = await ultraFastApiService.getProductsSmart({
+                priority: 'speed',
+                categorySlug: 'all',
+                limit: 30
+            });
             const requestTime = Date.now() - requestStart;
-            console.log(`📦 API Response received in ${requestTime}ms:`, response);
+            console.log(`⚡ Ultra-fast response in ${requestTime}ms:`, response);
             
             // Handle both response formats with additional safety checks
             if (response && response.products) {
