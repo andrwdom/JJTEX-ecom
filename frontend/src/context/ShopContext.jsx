@@ -182,32 +182,34 @@ const ShopContextProvider = (props) => {
     const getProductsData = async (retryCount = 0) => {
         try {
             setIsLoading(true);
-            console.log('🚀 Ultra-fast products loading...', retryCount > 0 ? `(Retry ${retryCount})` : '');
+            console.log('🚀 Loading products...', retryCount > 0 ? `(Retry ${retryCount})` : '');
             
             // Add request timestamp for debugging
             const requestStart = Date.now();
             
-            // Use ultra-fast API service for Amazon-level performance
-            // Fallback to regular API if ultra-fast fails
+            // Use regular API as primary (reliable) with ultra-fast as enhancement
             let response;
             try {
-                response = await ultraFastApiService.getProductsSmart({
-                    priority: 'speed',
-                    categorySlug: 'all',
-                    limit: 30
-                });
-            } catch (ultraFastError) {
-                console.log('🔄 Ultra-fast failed, falling back to regular API...');
+                // Try regular API first (most reliable)
+                response = await apiService.getProducts();
+                console.log('✅ Regular API working, products loaded');
+            } catch (regularApiError) {
+                console.log('🔄 Regular API failed, trying ultra-fast...');
                 try {
-                    response = await apiService.getProducts();
-                } catch (regularApiError) {
+                    response = await ultraFastApiService.getProductsSmart({
+                        priority: 'speed',
+                        categorySlug: 'all',
+                        limit: 30
+                    });
+                    console.log('✅ Ultra-fast API working, products loaded');
+                } catch (ultraFastError) {
                     console.log('🚨 All APIs failed, using emergency fallback...');
                     emergencyFallback.showOfflineNotification();
                     response = await emergencyFallback.getProductsWithFallback();
                 }
             }
             const requestTime = Date.now() - requestStart;
-            console.log(`⚡ Ultra-fast response in ${requestTime}ms:`, response);
+            console.log(`⚡ Products loaded in ${requestTime}ms:`, response);
             
             // Handle both response formats with additional safety checks
             if (response && response.products) {
