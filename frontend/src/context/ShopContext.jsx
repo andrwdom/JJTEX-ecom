@@ -6,6 +6,7 @@ import { useAuth } from './AuthContext';
 import { getApiEndpoint, useLegacyEndpoints } from '../config/api.config.js';
 import apiService from '../services/apiService.js';
 import ultraFastApiService from '../services/ultraFastApiService.js';
+import EmergencyFallbackService from '../services/emergencyFallback.js';
 
 export const ShopContext = createContext();
 
@@ -33,6 +34,9 @@ const ShopContextProvider = (props) => {
     const [isLoading, setIsLoading] = useState(false);
     const navigate = useNavigate();
     const { user, logout } = useAuth();
+    
+    // Emergency fallback service
+    const emergencyFallback = new EmergencyFallbackService();
 
     // Configure axios defaults and interceptors
     useEffect(() => {
@@ -194,7 +198,13 @@ const ShopContextProvider = (props) => {
                 });
             } catch (ultraFastError) {
                 console.log('🔄 Ultra-fast failed, falling back to regular API...');
-                response = await apiService.getProducts();
+                try {
+                    response = await apiService.getProducts();
+                } catch (regularApiError) {
+                    console.log('🚨 All APIs failed, using emergency fallback...');
+                    emergencyFallback.showOfflineNotification();
+                    response = await emergencyFallback.getProductsWithFallback();
+                }
             }
             const requestTime = Date.now() - requestStart;
             console.log(`⚡ Ultra-fast response in ${requestTime}ms:`, response);
@@ -203,15 +213,33 @@ const ShopContextProvider = (props) => {
             if (response && response.products) {
                 // BackendV2 format: { products: [...], total, page, pages, limit }
                 console.log('✅ Using backendV2 format, products:', response.products);
-                safeSetProducts(Array.isArray(response.products) ? response.products.reverse() : []);
+                const products = Array.isArray(response.products) ? response.products.reverse() : [];
+                safeSetProducts(products);
+                
+                // Save to emergency cache for offline use
+                if (products.length > 0 && !response.offline) {
+                    emergencyFallback.saveProductsToCache(products);
+                }
             } else if (response && response.success && response.data) {
                 // New format: { success: true, data: [...] }
                 console.log('✅ Using new format, products:', response.data);
-                safeSetProducts(Array.isArray(response.data) ? response.data.reverse() : []);
+                const products = Array.isArray(response.data) ? response.data.reverse() : [];
+                safeSetProducts(products);
+                
+                // Save to emergency cache for offline use
+                if (products.length > 0 && !response.offline) {
+                    emergencyFallback.saveProductsToCache(products);
+                }
             } else if (Array.isArray(response)) {
                 // Direct array response
                 console.log('✅ Direct array response, products:', response);
-                safeSetProducts(response.reverse());
+                const products = response.reverse();
+                safeSetProducts(products);
+                
+                // Save to emergency cache for offline use
+                if (products.length > 0) {
+                    emergencyFallback.saveProductsToCache(products);
+                }
             } else {
                 console.log('❌ No products found in response:', response);
                 safeSetProducts([]);
