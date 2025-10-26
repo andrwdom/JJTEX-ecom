@@ -42,7 +42,22 @@ export const getProductById = async (req, res) => {
             }));
         }
         
-        console.log('🔧 DEBUG: Product sizes after processing:',
+        console.log('🔧 DEBUG: Product sizes after processing:', JSON.stringify(product.sizes, null, 2));
+        
+        // Return the product data
+        return res.status(200).json({ 
+            success: true, 
+            data: product 
+        });
+        
+    } catch (error) {
+        console.error('❌ Get Product By ID Error:', error);
+        return res.status(500).json({ 
+            success: false, 
+            error: error.message || 'Internal server error' 
+        });
+    }
+};
 
 // GET /api/products/category/:category or /api/products?category=...
 export const getAllProducts = async (req, res) => {
