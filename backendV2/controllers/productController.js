@@ -9,46 +9,27 @@ import redisService from '../services/redisService.js';
 // GET /api/products/:id or /api/products/custom/:customId - RESTful single product fetch
 export const getProductById = async (req, res) => {
     try {
-        const startTime = Date.now();
-        const productId = req.params.id;
-        console.log('🔧 DEBUG: getProductById called with ID:', productId);
-        
-        // 🚀 PERFORMANCE OPTIMIZATION: Check Redis cache first
-        const cacheKey = `product:${productId}`;
-        const cachedProduct = await redisService.get(cacheKey);
-        
-        if (cachedProduct) {
-            const responseTime = Date.now() - startTime;
-            console.log(`⚡ Cache HIT: Product loaded in ${responseTime}ms`);
-            
-            res.set({
-                'Cache-Control': 'public, max-age=300', // 5 minutes browser cache
-                'X-Cache-Status': 'HIT',
-                'X-Response-Time': `${responseTime}ms`
-            });
-            
-            return res.status(200).json({ 
-                success: true, 
-                data: cachedProduct 
-            });
-        }
-        
-        console.log('📭 Cache MISS: Fetching from database');
+        console.log('🔧 DEBUG: getProductById called with ID:', req.params.id);
+        console.log('🔧 DEBUG: Query params:', req.query);
         
         let product;
-        if (productId && productId.length === 24) {
-            product = await productModel.findById(productId).lean();
+        if (req.params.id && req.params.id.length === 24) {
+            product = await productModel.findById(req.params.id).lean();
+            console.log('🔧 DEBUG: Found by MongoDB ID:', product ? 'Yes' : 'No');
         }
-        if (!product && productId) {
+        if (!product && req.params.id) {
             // Try fetching by customId
-            product = await productModel.findOne({ customId: productId }).lean();
+            product = await productModel.findOne({ customId: req.params.id }).lean();
+            console.log('🔧 DEBUG: Found by customId:', product ? 'Yes' : 'No');
         }
         if (!product) {
             console.log('🔧 DEBUG: Product not found');
             return res.status(404).json({ error: 'Product not found' });
         }
         
-        console.log('🔧 DEBUG: Product found - processing stock data');
+        console.log('🔧 DEBUG: Product found - sizes before processing:', JSON.stringify(product.sizes, null, 2));
+        console.log('🔧 DEBUG: Product name:', product.name);
+        console.log('🔧 DEBUG: Product customId:', product.customId);
         
         // 🔑 CRITICAL FIX: Calculate available stock (stock - reserved) for each size
         if (product.sizes && Array.isArray(product.sizes)) {
@@ -61,49 +42,7 @@ export const getProductById = async (req, res) => {
             }));
         }
         
-        // 🚀 PERFORMANCE OPTIMIZATION: Cache the processed product for 5 minutes
-        await redisService.set(cacheKey, product, 300);
-        
-        const responseTime = Date.now() - startTime;
-        console.log(`📦 Product loaded from database in ${responseTime}ms`);
-        
-        res.set({
-            'Cache-Control': 'public, max-age=300', // 5 minutes browser cache
-            'X-Cache-Status': 'MISS',
-            'X-Response-Time': `${responseTime}ms`
-        });
-        
-        res.status(200).json({ 
-            success: true, 
-            data: product 
-        });
-        
-        console.log('🔧 DEBUG: Product sizes after processing:', JSON.stringify(product.sizes, null, 2));
-        console.log('🔧 DEBUG: Total sizes count:', product.sizes ? product.sizes.length : 0);
-        
-        // SIMPLIFIED: Minimal image processing for speed
-        if (product.images && !product.image) {
-            product.image = product.images; // Frontend expects 'image' array
-        }
-        
-        // Add cache busting headers
-        res.set({
-            'Cache-Control': 'no-cache, no-store, must-revalidate',
-            'Pragma': 'no-cache',
-            'Expires': '0'
-        });
-        
-        // 🔧 JJTEX COMPATIBILITY: Return format expected by frontend
-        res.status(200).json({ 
-            success: true,
-            data: product,
-            product: product // Keep both for compatibility
-        });
-    } catch (error) {
-        console.error('Get Product By ID Error:', error);
-        res.status(500).json({ error: error.message });
-    }
-};
+        console.log('🔧 DEBUG: Product sizes after processing:',
 
 // GET /api/products/category/:category or /api/products?category=...
 export const getAllProducts = async (req, res) => {

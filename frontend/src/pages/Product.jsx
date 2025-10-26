@@ -154,9 +154,8 @@ const Product = () => {
       console.log('🔄 Fetching product data...', retryCount > 0 ? `(Retry ${retryCount})` : '');
       
       const response = await axios.get(backendUrl + `/api/products/${productId}`, {
-        timeout: 5000, // Reduced from 15s to 5s for better UX
+        timeout: 30000, // 30 seconds to handle slow backend
         headers: {
-          'Cache-Control': 'max-age=300', // Allow 5-minute browser caching
           'Accept': 'application/json'
         }
       });
@@ -164,9 +163,19 @@ const Product = () => {
       const requestTime = Date.now() - requestStart;
       console.log(`📦 Product API Response received in ${requestTime}ms`);
       
+      // Handle different response formats from backend
+      let productData = null;
       if (response.data.success && response.data.data) {
-        setProductData(response.data.data);
-        setImage(response.data.data.images?.[0]);
+        productData = response.data.data;
+      } else if (response.data.product) {
+        productData = response.data.product;
+      } else if (response.data) {
+        productData = response.data;
+      }
+      
+      if (productData) {
+        setProductData(productData);
+        setImage(productData.images?.[0] || productData.image?.[0]);
         console.log('✅ Product data loaded successfully');
       } else {
         throw new Error('Invalid product data received');
@@ -174,8 +183,8 @@ const Product = () => {
     } catch (error) {
       console.error('Error fetching product:', error);
       
-      // Simplified retry logic - only retry on network errors
-      const maxRetries = 2; // Reduced from 3 to 2
+      // Only retry on network errors, not on 404 or other client errors
+      const maxRetries = 2;
       const isRetryableError = (
         error.code === 'ECONNABORTED' ||
         error.code === 'ENOTFOUND' ||
@@ -185,7 +194,7 @@ const Product = () => {
       );
       
       if (isRetryableError && retryCount < maxRetries) {
-        const delay = 1000; // Fixed 1-second delay instead of exponential
+        const delay = 2000; // 2 second delay
         console.warn(`⚠️ Product API error - retrying in ${delay}ms... (attempt ${retryCount + 1}/${maxRetries})`);
         
         setTimeout(() => {
@@ -195,6 +204,7 @@ const Product = () => {
       } else {
         // Show user-friendly error message
         const errorMessage = error.response?.data?.message || 
+                            error.response?.data?.error ||
                             error.message || 
                             'Failed to load product details. Please check your connection and try again.';
         toast.error(errorMessage);
@@ -261,8 +271,10 @@ const Product = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-gray-900"></div>
+      <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50">
+        <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-[#ff69b4] mb-4"></div>
+        <p className="text-gray-600 text-lg">Loading product details...</p>
+        <p className="text-gray-400 text-sm mt-2">This may take a moment</p>
       </div>
     );
   }
