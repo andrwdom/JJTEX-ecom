@@ -1,21 +1,7 @@
-import React from 'react'
+import React, { Suspense, lazy } from 'react'
 import { Routes, Route } from 'react-router-dom'
-import Home from './pages/Home'
-import Collection from './pages/Collection'
-import About from './pages/About'
-import Contact from './pages/Contact'
-import Product from './pages/Product'
-import Cart from './pages/Cart'
-import Login from './pages/Login'
-import PlaceOrder from './pages/PlaceOrder'
-import Orders from './pages/Orders'
-import Navbar from './components/Navbar'
-import Footer from './components/Footer'
 import { ToastContainer } from 'react-toastify'
 import 'react-toastify/dist/ReactToastify.css'
-import Verify from './pages/Verify'
-import PageTransition from './components/PageTransition'
-import ForgotPassword from './pages/ForgotPassword'
 import LoadingScreen from './components/LoadingScreen'
 import { LoadingProvider } from './context/LoadingContext'
 import WithClickSpark from './components/WithClickSpark'
@@ -24,13 +10,29 @@ import ShopContextProvider from './context/ShopContext'
 import AuthCheck from './components/AuthCheck'
 import NetworkStatusIndicator from './components/NetworkStatusIndicator'
 import ErrorBoundary from './components/ErrorBoundary'
+import PageTransition from './components/PageTransition'
 
-// Import policy pages
-import TermsAndConditions from './pages/policies/TermsAndConditions'
-import PolicyPrivacy from './pages/policies/PolicyPrivacy'
-import RefundPolicy from './pages/policies/RefundPolicy'
-import ReturnPolicy from './pages/policies/ReturnPolicy'
-import ShippingPolicy from './pages/policies/ShippingPolicy'
+// 🚀 LAZY LOADING: Load components only when needed for faster initial load
+const Home = lazy(() => import('./pages/Home'))
+const Collection = lazy(() => import('./pages/Collection'))
+const About = lazy(() => import('./pages/About'))
+const Contact = lazy(() => import('./pages/Contact'))
+const Product = lazy(() => import('./pages/Product'))
+const Cart = lazy(() => import('./pages/Cart'))
+const Login = lazy(() => import('./pages/Login'))
+const PlaceOrder = lazy(() => import('./pages/PlaceOrder'))
+const Orders = lazy(() => import('./pages/Orders'))
+const Verify = lazy(() => import('./pages/Verify'))
+const ForgotPassword = lazy(() => import('./pages/ForgotPassword'))
+const Navbar = lazy(() => import('./components/Navbar'))
+const Footer = lazy(() => import('./components/Footer'))
+
+// Lazy load policy pages
+const TermsAndConditions = lazy(() => import('./pages/policies/TermsAndConditions'))
+const PolicyPrivacy = lazy(() => import('./pages/policies/PolicyPrivacy'))
+const RefundPolicy = lazy(() => import('./pages/policies/RefundPolicy'))
+const ReturnPolicy = lazy(() => import('./pages/policies/ReturnPolicy'))
+const ShippingPolicy = lazy(() => import('./pages/policies/ShippingPolicy'))
 
 export const backendUrl = import.meta.env.VITE_BACKEND_URL || 'https://api.jjtextiles.com';
 
@@ -57,26 +59,28 @@ const App = () => {
                 <Navbar />
                 <AuthCheck />
                 <PageTransition>
-                  <Routes>
-                    <Route path='/' element={<Home />} />
-                    <Route path='/collection' element={<Collection />} />
-                    <Route path='/about' element={<About />} />
-                    <Route path='/contact' element={<Contact />} />
-                    <Route path='/product/:productId' element={<Product />} />
-                    <Route path='/cart' element={<Cart />} />
-                    <Route path='/login' element={<Login />} />
-                    <Route path='/forgot-password' element={<ForgotPassword />} />
-                    <Route path='/place-order' element={<PlaceOrder />} />
-                    <Route path='/orders' element={<Orders />} />
-                    <Route path='/verify' element={<Verify />} />
-                    
-                    {/* Policy Routes */}
-                    <Route path='/policies/terms-and-conditions' element={<TermsAndConditions />} />
-                    <Route path='/policies/privacy-policy' element={<PolicyPrivacy />} />
-                    <Route path='/policies/refund-policy' element={<RefundPolicy />} />
-                    <Route path='/policies/return-policy' element={<ReturnPolicy />} />
-                    <Route path='/policies/shipping-policy' element={<ShippingPolicy />} />
-                  </Routes>
+                  <Suspense fallback={<LoadingScreen />}>
+                    <Routes>
+                      <Route path='/' element={<Home />} />
+                      <Route path='/collection' element={<Collection />} />
+                      <Route path='/about' element={<About />} />
+                      <Route path='/contact' element={<Contact />} />
+                      <Route path='/product/:productId' element={<Product />} />
+                      <Route path='/cart' element={<Cart />} />
+                      <Route path='/login' element={<Login />} />
+                      <Route path='/forgot-password' element={<ForgotPassword />} />
+                      <Route path='/place-order' element={<PlaceOrder />} />
+                      <Route path='/orders' element={<Orders />} />
+                      <Route path='/verify' element={<Verify />} />
+                      
+                      {/* Policy Routes */}
+                      <Route path='/policies/terms-and-conditions' element={<TermsAndConditions />} />
+                      <Route path='/policies/privacy-policy' element={<PolicyPrivacy />} />
+                      <Route path='/policies/refund-policy' element={<RefundPolicy />} />
+                      <Route path='/policies/return-policy' element={<ReturnPolicy />} />
+                      <Route path='/policies/shipping-policy' element={<ShippingPolicy />} />
+                    </Routes>
+                  </Suspense>
                 </PageTransition>
                 <Footer />
               </div>
