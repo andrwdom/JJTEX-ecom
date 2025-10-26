@@ -420,17 +420,17 @@ const Product = () => {
             )}
           </div>
 
-          {/* Action Buttons (desktop) */}
-          <div className="hidden sm:flex gap-4 mt-2">
+          {/* Action Buttons */}
+          <div className="flex gap-4 mt-2">
             <button 
               onClick={handleAddToCart} 
-              className="bg-primary-400 rounded-full text-white px-8 py-3 text-sm font-semibold hover:bg-primary-600 transition-colors"
+              className="bg-primary-400 rounded-full text-white px-6 sm:px-8 py-3 text-sm font-semibold hover:bg-primary-600 transition-colors flex-1 sm:flex-none"
             >
               ADD TO CART
             </button>
             <button
               onClick={handleBuyNow}
-              className="bg-black rounded-full text-white px-8 py-3 text-sm font-semibold hover:bg-gray-800 transition-colors"
+              className="bg-black rounded-full text-white px-6 sm:px-8 py-3 text-sm font-semibold hover:bg-gray-800 transition-colors flex-1 sm:flex-none"
             >
               BUY NOW
             </button>
@@ -438,7 +438,7 @@ const Product = () => {
         </motion.div>
       </div>
 
-      {/* Sticky Action Bar (mobile) */}
+      {/* Sticky Action Bar (mobile) - Only shows when scrolling past product info */}
       <AnimatePresence>
         {showStickyBar && (
           <motion.div
