@@ -17,7 +17,7 @@ export default defineConfig({
           vendor: ['react', 'react-dom'],
           router: ['react-router-dom'],
           ui: ['framer-motion', 'react-toastify'],
-          utils: ['axios', 'uuid']
+          utils: ['axios']
         },
         // Optimize chunk names
         chunkFileNames: 'assets/[name]-[hash].js',
