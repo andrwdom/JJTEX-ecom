@@ -78,7 +78,7 @@ const ProductCard = ({ product }) => {
           {/* Confetti Burst */}
           <ConfettiBurst show={showConfetti} />
           {/* Image Container */}
-          <div className="relative w-full pb-[125%] rounded-[1.5rem] bg-gray-50 mb-4" style={{overflow: 'visible'}}>
+          <div className="relative w-full pb-[125%] rounded-[1.5rem] bg-gray-50 mb-4 overflow-hidden">
             <AnimatePresence mode="wait">
               <motion.img 
                 key={product.images?.[0]}
@@ -102,13 +102,13 @@ const ProductCard = ({ product }) => {
             </AnimatePresence>
 
             {/* Quick Actions */}
-            <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors duration-300">
+            <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors duration-300 overflow-hidden">
               <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
                 <motion.button
                   whileHover={{ scale: 1.1 }}
                   whileTap={{ scale: 0.9 }}
                   onClick={handleAddToCart}
-                  className="bg-white text-gray-800 p-2 rounded-full shadow-lg hover:bg-[#ff69b4] hover:text-white transition-colors"
+                  className="bg-white text-gray-800 p-2 rounded-full shadow-lg hover:bg-[#ff69b4] hover:text-white transition-colors z-10"
                 >
                   <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
@@ -117,7 +117,7 @@ const ProductCard = ({ product }) => {
                 <motion.button
                   whileHover={{ scale: 1.1 }}
                   whileTap={{ scale: 0.9 }}
-                  className="bg-white text-gray-800 p-2 rounded-full shadow-lg hover:bg-[#ff69b4] hover:text-white transition-colors"
+                  className="bg-white text-gray-800 p-2 rounded-full shadow-lg hover:bg-[#ff69b4] hover:text-white transition-colors z-10"
                 >
                   <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
