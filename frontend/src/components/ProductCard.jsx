@@ -69,7 +69,7 @@ const ProductCard = ({ product }) => {
       style={{ overflow: 'visible', willChange: 'opacity, transform' }}
     >
       <Link 
-        to={`/product/${product._id}`}
+        to={`/product/${product.customId || product._id}`}
         className="block"
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}

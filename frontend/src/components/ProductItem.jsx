@@ -3,20 +3,20 @@ import { ShopContext } from '../context/ShopContext'
 import { Link, useNavigate } from 'react-router-dom'
 import { fixImageUrl, getFallbackImage } from '../utils/imageUtils'
 
-const ProductItem = ({id, image, name, price}) => {
+const ProductItem = ({id, customId, image, name, price}) => {
   const { currency } = useContext(ShopContext);
   const navigate = useNavigate();
 
   const handleClick = (e) => {
     e.preventDefault();
-    navigate(`/product/${id}`);
+    navigate(`/product/${customId || id}`);
   }
 
   return (
     <Link 
       onClick={handleClick} 
       className='text-gray-700 cursor-pointer' 
-      to={`/product/${id}`}
+      to={`/product/${customId || id}`}
     >
       <div className='overflow-hidden'>
         <img 
