@@ -150,15 +150,19 @@ const Product = () => {
   const fetchProductData = async (retryCount = 0) => {
     try {
       setLoading(true);
+      const requestStart = Date.now();
       console.log('🔄 Fetching product data...', retryCount > 0 ? `(Retry ${retryCount})` : '');
       
       const response = await axios.get(backendUrl + `/api/products/${productId}`, {
-        timeout: 15000, // 15 second timeout
+        timeout: 5000, // Reduced from 15s to 5s for better UX
         headers: {
-          'Cache-Control': 'no-cache',
-          'Pragma': 'no-cache'
+          'Cache-Control': 'max-age=300', // Allow 5-minute browser caching
+          'Accept': 'application/json'
         }
       });
+      
+      const requestTime = Date.now() - requestStart;
+      console.log(`📦 Product API Response received in ${requestTime}ms`);
       
       if (response.data.success && response.data.data) {
         setProductData(response.data.data);
@@ -170,8 +174,8 @@ const Product = () => {
     } catch (error) {
       console.error('Error fetching product:', error);
       
-      // Enhanced retry logic for product page
-      const maxRetries = 3;
+      // Simplified retry logic - only retry on network errors
+      const maxRetries = 2; // Reduced from 3 to 2
       const isRetryableError = (
         error.code === 'ECONNABORTED' ||
         error.code === 'ENOTFOUND' ||
@@ -181,7 +185,7 @@ const Product = () => {
       );
       
       if (isRetryableError && retryCount < maxRetries) {
-        const delay = Math.pow(2, retryCount) * 1000; // 1s, 2s, 4s
+        const delay = 1000; // Fixed 1-second delay instead of exponential
         console.warn(`⚠️ Product API error - retrying in ${delay}ms... (attempt ${retryCount + 1}/${maxRetries})`);
         
         setTimeout(() => {

@@ -9,27 +9,46 @@ import redisService from '../services/redisService.js';
 // GET /api/products/:id or /api/products/custom/:customId - RESTful single product fetch
 export const getProductById = async (req, res) => {
     try {
-        console.log('🔧 DEBUG: getProductById called with ID:', req.params.id);
-        console.log('🔧 DEBUG: Query params:', req.query);
+        const startTime = Date.now();
+        const productId = req.params.id;
+        console.log('🔧 DEBUG: getProductById called with ID:', productId);
+        
+        // 🚀 PERFORMANCE OPTIMIZATION: Check Redis cache first
+        const cacheKey = `product:${productId}`;
+        const cachedProduct = await redisService.get(cacheKey);
+        
+        if (cachedProduct) {
+            const responseTime = Date.now() - startTime;
+            console.log(`⚡ Cache HIT: Product loaded in ${responseTime}ms`);
+            
+            res.set({
+                'Cache-Control': 'public, max-age=300', // 5 minutes browser cache
+                'X-Cache-Status': 'HIT',
+                'X-Response-Time': `${responseTime}ms`
+            });
+            
+            return res.status(200).json({ 
+                success: true, 
+                data: cachedProduct 
+            });
+        }
+        
+        console.log('📭 Cache MISS: Fetching from database');
         
         let product;
-        if (req.params.id && req.params.id.length === 24) {
-            product = await productModel.findById(req.params.id).lean();
-            console.log('🔧 DEBUG: Found by MongoDB ID:', product ? 'Yes' : 'No');
+        if (productId && productId.length === 24) {
+            product = await productModel.findById(productId).lean();
         }
-        if (!product && req.params.id) {
+        if (!product && productId) {
             // Try fetching by customId
-            product = await productModel.findOne({ customId: req.params.id }).lean();
-            console.log('🔧 DEBUG: Found by customId:', product ? 'Yes' : 'No');
+            product = await productModel.findOne({ customId: productId }).lean();
         }
         if (!product) {
             console.log('🔧 DEBUG: Product not found');
             return res.status(404).json({ error: 'Product not found' });
         }
         
-        console.log('🔧 DEBUG: Product found - sizes before processing:', JSON.stringify(product.sizes, null, 2));
-        console.log('🔧 DEBUG: Product name:', product.name);
-        console.log('🔧 DEBUG: Product customId:', product.customId);
+        console.log('🔧 DEBUG: Product found - processing stock data');
         
         // 🔑 CRITICAL FIX: Calculate available stock (stock - reserved) for each size
         if (product.sizes && Array.isArray(product.sizes)) {
@@ -41,6 +60,23 @@ export const getProductById = async (req, res) => {
                 reserved: sizeObj.reserved || 0
             }));
         }
+        
+        // 🚀 PERFORMANCE OPTIMIZATION: Cache the processed product for 5 minutes
+        await redisService.set(cacheKey, product, 300);
+        
+        const responseTime = Date.now() - startTime;
+        console.log(`📦 Product loaded from database in ${responseTime}ms`);
+        
+        res.set({
+            'Cache-Control': 'public, max-age=300', // 5 minutes browser cache
+            'X-Cache-Status': 'MISS',
+            'X-Response-Time': `${responseTime}ms`
+        });
+        
+        res.status(200).json({ 
+            success: true, 
+            data: product 
+        });
         
         console.log('🔧 DEBUG: Product sizes after processing:', JSON.stringify(product.sizes, null, 2));
         console.log('🔧 DEBUG: Total sizes count:', product.sizes ? product.sizes.length : 0);
@@ -697,8 +733,8 @@ export const addProduct = async (req, res) => {
     const savedProduct = await newProduct.save();
     console.log('🔧 DEBUG: Product saved successfully:', savedProduct.customId);
     
-    // Invalidate products cache when product is added
-    await redisService.delPattern('products:*');
+    // 🚀 PERFORMANCE OPTIMIZATION: Invalidate product caches
+    await redisService.delPattern('products:*'); // Clear all products cache
     console.log('🗑️ Cache invalidated: All products cache cleared');
     
     res.status(201).json({
@@ -856,9 +892,13 @@ export const updateProductV2 = async (req, res) => {
     
     console.log('🔧 DEBUG: Product updated successfully:', updatedProduct.customId);
     
-    // Invalidate products cache when product is updated
-    await redisService.delPattern('products:*');
-    console.log('🗑️ Cache invalidated: All products cache cleared');
+    // 🚀 PERFORMANCE OPTIMIZATION: Invalidate specific product cache
+    const productCacheKey = `product:${productId}`;
+    const customIdCacheKey = `product:${updatedProduct.customId}`;
+    await redisService.del(productCacheKey);
+    await redisService.del(customIdCacheKey);
+    await redisService.delPattern('products:*'); // Clear all products cache
+    console.log('🗑️ Cache invalidated: Product cache cleared');
     
     res.json({
       success: true,
@@ -900,9 +940,13 @@ export const removeProductV2 = async (req, res) => {
     
     console.log('🔧 DEBUG: Product deleted successfully:', product.customId);
     
-    // Invalidate products cache when product is deleted
-    await redisService.delPattern('products:*');
-    console.log('🗑️ Cache invalidated: All products cache cleared');
+    // 🚀 PERFORMANCE OPTIMIZATION: Invalidate specific product cache
+    const productCacheKey = `product:${productId}`;
+    const customIdCacheKey = `product:${product.customId}`;
+    await redisService.del(productCacheKey);
+    await redisService.del(customIdCacheKey);
+    await redisService.delPattern('products:*'); // Clear all products cache
+    console.log('🗑️ Cache invalidated: Product cache cleared');
     
     res.json({
       success: true,
