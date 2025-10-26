@@ -181,28 +181,28 @@ const ShopContextProvider = (props) => {
 
     const getProductsData = async (retryCount = 0) => {
         try {
-            setIsLoading(true);
+            // 🚀 CRITICAL FIX: Don't block the UI while loading products
+            // Only show loading on first load, not on retries
+            if (retryCount === 0) {
+                setIsLoading(true);
+            }
             console.log('🚀 Loading products...', retryCount > 0 ? `(Retry ${retryCount})` : '');
             
             // Add request timestamp for debugging
             const requestStart = Date.now();
             
-            // Use regular API as primary (reliable) with ultra-fast as enhancement
+            // 🚀 ULTRA-FAST: Use ultra-fast endpoint first for instant loading
             let response;
             try {
-                // Try regular API first (most reliable)
-                response = await apiService.getProducts();
-                console.log('✅ Regular API working, products loaded');
-            } catch (regularApiError) {
-                console.log('🔄 Regular API failed, trying ultra-fast...');
+                // Try ultra-fast API first for maximum speed
+                response = await ultraFastApiService.getProductsUltraFast();
+                console.log('✅ Ultra-fast API working, products loaded');
+            } catch (ultraFastError) {
+                console.log('🔄 Ultra-fast failed, trying regular API...');
                 try {
-                    response = await ultraFastApiService.getProductsSmart({
-                        priority: 'speed',
-                        categorySlug: 'all',
-                        limit: 30
-                    });
-                    console.log('✅ Ultra-fast API working, products loaded');
-                } catch (ultraFastError) {
+                    response = await apiService.getProducts();
+                    console.log('✅ Regular API working, products loaded');
+                } catch (regularApiError) {
                     console.log('🚨 All APIs failed, using emergency fallback...');
                     emergencyFallback.showOfflineNotification();
                     response = await emergencyFallback.getProductsWithFallback();
@@ -211,39 +211,36 @@ const ShopContextProvider = (props) => {
             const requestTime = Date.now() - requestStart;
             console.log(`⚡ Products loaded in ${requestTime}ms:`, response);
             
-            // Handle both response formats with additional safety checks
+            // 🚀 PROGRESSIVE LOADING: Show products immediately as they load
+            let products = [];
+            
             if (response && response.products) {
                 // BackendV2 format: { products: [...], total, page, pages, limit }
                 console.log('✅ Using backendV2 format, products:', response.products);
-                const products = Array.isArray(response.products) ? response.products.reverse() : [];
-                safeSetProducts(products);
-                
-                // Save to emergency cache for offline use
-                if (products.length > 0 && !response.offline) {
-                    emergencyFallback.saveProductsToCache(products);
-                }
+                products = Array.isArray(response.products) ? response.products.reverse() : [];
             } else if (response && response.success && response.data) {
                 // New format: { success: true, data: [...] }
                 console.log('✅ Using new format, products:', response.data);
-                const products = Array.isArray(response.data) ? response.data.reverse() : [];
-                safeSetProducts(products);
-                
-                // Save to emergency cache for offline use
-                if (products.length > 0 && !response.offline) {
-                    emergencyFallback.saveProductsToCache(products);
-                }
+                products = Array.isArray(response.data) ? response.data.reverse() : [];
             } else if (Array.isArray(response)) {
                 // Direct array response
                 console.log('✅ Direct array response, products:', response);
-                const products = response.reverse();
+                products = response.reverse();
+            } else {
+                console.log('❌ No products found in response:', response);
+                products = [];
+            }
+            
+            // 🚀 IMMEDIATE UPDATE: Set products immediately to show them
+            if (products.length > 0) {
                 safeSetProducts(products);
+                console.log(`🎉 ${products.length} products loaded and displayed!`);
                 
                 // Save to emergency cache for offline use
-                if (products.length > 0) {
+                if (!response.offline) {
                     emergencyFallback.saveProductsToCache(products);
                 }
             } else {
-                console.log('❌ No products found in response:', response);
                 safeSetProducts([]);
             }
         } catch (error) {
