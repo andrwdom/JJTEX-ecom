@@ -108,14 +108,15 @@ export const config = {
         keepAlive: 30000,
         connectTimeout: 10000,
         commandTimeout: 5000,
-        // Cache TTL settings (in seconds)
+        // Cache TTL settings (in seconds) - OPTIMIZED FOR PRODUCTION
         ttl: {
-            products: parseInt(process.env.REDIS_PRODUCTS_TTL || '300', 10), // 5 minutes
-            categories: parseInt(process.env.REDIS_CATEGORIES_TTL || '3600', 10), // 1 hour
+            products: parseInt(process.env.REDIS_PRODUCTS_TTL || '1800', 10), // 30 minutes (increased from 5min)
+            categories: parseInt(process.env.REDIS_CATEGORIES_TTL || '7200', 10), // 2 hours (increased from 1hr)
             cart: parseInt(process.env.REDIS_CART_TTL || '3600', 10), // 1 hour
             user: parseInt(process.env.REDIS_USER_TTL || '86400', 10), // 24 hours
             sessions: parseInt(process.env.REDIS_SESSIONS_TTL || '86400', 10), // 24 hours
-            static: parseInt(process.env.REDIS_STATIC_TTL || '7200', 10) // 2 hours
+            static: parseInt(process.env.REDIS_STATIC_TTL || '14400', 10), // 4 hours (increased from 2hr)
+            ultraFast: parseInt(process.env.REDIS_ULTRA_FAST_TTL || '600', 10) // 10 minutes for ultra-fast endpoints
         }
     },
 };

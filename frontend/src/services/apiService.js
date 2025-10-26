@@ -143,27 +143,23 @@ class ApiService {
 
     // Products API - OPTIMIZED for speed
     async getProducts(params = {}) {
-        // Use ultra-fast endpoint for initial load if no specific filters
-        const useUltraFastEndpoint = !params.search && !params.categorySlug && !params.size && 
-                                    !params.minPrice && !params.maxPrice && !params.isNewArrival && 
-                                    !params.isBestSeller && !params.sleeveType;
+        // 🚀 ALWAYS use ultra-fast endpoint for better performance
+        const endpoint = '/api/products/ultra-fast';
         
-        const endpoint = useUltraFastEndpoint 
-            ? '/api/products/ultra-fast'  // Use ultra-fast endpoint
-            : (this.useLegacy 
-                ? getApiEndpoint('PRODUCTS', 'LEGACY_LIST')
-                : getApiEndpoint('PRODUCTS', 'LIST'));
+        console.log('🚀 Using ultra-fast endpoint for products:', endpoint);
         
         const response = await this.get(endpoint, params);
         
-        // Normalize response format
-        if (this.useLegacy) {
+        // Normalize response format for ultra-fast endpoint
+        if (response && response.products) {
             return {
                 success: true,
-                data: response.products || [],
-                total: response.products?.length || 0,
-                page: 1,
-                totalPages: 1
+                products: response.products,
+                total: response.total || response.products.length,
+                page: response.page || 1,
+                totalPages: response.totalPages || 1,
+                cached: response.cached || false,
+                responseTime: response.responseTime || 0
             };
         }
         

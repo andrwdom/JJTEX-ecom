@@ -417,14 +417,29 @@ app.use((req, res, next) => {
 app.use((req, res, next) => {
     // Add performance headers for API responses
     if (req.path.startsWith('/api/')) {
-        // 🔥 CRITICAL: Zero cache + version tracking for instant updates
-        res.set({
-            'Cache-Control': 'no-cache, no-store, must-revalidate',
-            'Pragma': 'no-cache',
-            'Expires': '0',
-            'X-API-Version': process.env.API_VERSION || '1.0.0',
-            'X-Build-Time': process.env.BUILD_TIME || new Date().toISOString()
-        });
+        // 🚀 PRODUCTION OPTIMIZATION: Smart caching based on endpoint
+        if (req.path.includes('/ultra-fast') || req.path.includes('/instant')) {
+            // Ultra-fast endpoints: Aggressive caching
+            res.set({
+                'Cache-Control': 'public, max-age=300, s-maxage=600', // 5min browser, 10min CDN
+                'X-API-Version': process.env.API_VERSION || '1.0.0',
+                'X-Build-Time': process.env.BUILD_TIME || new Date().toISOString()
+            });
+        } else if (req.path.includes('/products') && req.method === 'GET') {
+            // Product endpoints: Moderate caching
+            res.set({
+                'Cache-Control': 'public, max-age=180, s-maxage=300', // 3min browser, 5min CDN
+                'X-API-Version': process.env.API_VERSION || '1.0.0',
+                'X-Build-Time': process.env.BUILD_TIME || new Date().toISOString()
+            });
+        } else {
+            // Other API endpoints: Short caching
+            res.set({
+                'Cache-Control': 'public, max-age=60, s-maxage=120', // 1min browser, 2min CDN
+                'X-API-Version': process.env.API_VERSION || '1.0.0',
+                'X-Build-Time': process.env.BUILD_TIME || new Date().toISOString()
+            });
+        }
     }
     next();
 });
